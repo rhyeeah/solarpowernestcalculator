@@ -12,30 +12,33 @@
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
 
   // ─────────────────────────────────────────────────────────────
   // 🔥 PASTE YOUR FIREBASE CONFIG HERE
   //    Go to: console.firebase.google.com → Project Settings → Your Apps → SDK setup
   // ─────────────────────────────────────────────────────────────
   const firebaseConfig = {
-    apiKey:            "YOUR_API_KEY",
-    authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId:         "YOUR_PROJECT_ID",
-    storageBucket:     "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId:             "YOUR_APP_ID"
+    apiKey:            "AIzaSyC1Cu_NTt_WIkZpmICt4bEGcwyUPXkBGbE",
+    authDomain:        "solar-power-nest.firebaseapp.com",
+    projectId:         "solar-power-nest",
+    storageBucket:     "solar-power-nest.firebasestorage.app",
+    messagingSenderId: "52579425662",
+    appId:             "1:52579425662:web:57dd02654197914ed0672f",
+    measurementId:     "G-NXNKT6G5FD"
   };
 
   // Admin email — only this account sees the Leads Admin tab
-  const ADMIN_EMAIL = "YOUR_ADMIN_EMAIL@gmail.com";
+  const ADMIN_EMAIL = "rhyeeah@gmail.com";
 
-  let app, auth, db, currentUser = null;
+  let app, auth, db, analytics, currentUser = null;
   const configured = firebaseConfig.apiKey !== "YOUR_API_KEY";
 
   if (configured) {
-    app  = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db   = getFirestore(app);
+    app       = initializeApp(firebaseConfig);
+    auth      = getAuth(app);
+    db        = getFirestore(app);
+    analytics = getAnalytics(app);
 
     onAuthStateChanged(auth, user => {
       currentUser = user;
