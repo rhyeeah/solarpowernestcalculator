@@ -8,8 +8,7 @@
 <!-- Firebase v10 -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithRedirect,
-    getRedirectResult, signOut, onAuthStateChanged }
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, updateDoc,
     doc, query, orderBy, serverTimestamp }
@@ -32,8 +31,8 @@
 
   // ─── CONFIG ───────────────────────────────────────────────
   const ADMIN_EMAIL  = "rhyeeah@gmail.com";
-  const GCASH_NUMBER = "09XX XXX XXXX";   // ← PUT YOUR GCASH NUMBER HERE
-  const MAYA_NUMBER  = "09XX XXX XXXX";   // ← PUT YOUR MAYA NUMBER HERE (or leave same)
+  const GCASH_NUMBER = "09756426130";   // GCash number
+  const MAYA_NUMBER  = "09756426130";   // Maya number (same or update separately)
   const PRICE_BASIC  = 99;   // ₱99  — calculator + PDF
   const PRICE_FULL   = 199;  // ₱199 — everything unlocked
   // ──────────────────────────────────────────────────────────
@@ -46,52 +45,76 @@
 
   let app, auth, db, analytics, currentUser = null;
   let userIsPaid = false;
-  let userPlan   = null; // 'basic' | 'full'
+  let userPlan   = null;
   const configured = firebaseConfig.apiKey !== "YOUR_API_KEY";
+
+  function showLoading() {
+    const lg = document.getElementById('loginGate');
+    const ap = document.getElementById('appShell');
+    if (lg) lg.style.display = 'none';
+    if (ap) ap.style.display = 'none';
+    // Show a simple loading screen
+    let loader = document.getElementById('authLoader');
+    if (!loader) {
+      loader = document.createElement('div');
+      loader.id = 'authLoader';
+      loader.style.cssText = 'position:fixed;inset:0;background:linear-gradient(135deg,#0D2B1A,#0a1f33);display:flex;align-items:center;justify-content:center;z-index:99998;flex-direction:column;gap:16px;';
+      loader.innerHTML = '<img src="' + document.querySelector('.login-logo-img')?.src + '" style="width:80px;height:80px;object-fit:contain;" /><div style="color:white;font-family:Baloo 2,sans-serif;font-weight:700;font-size:1rem;">Loading Solar Power Nest...</div><div style="width:40px;height:40px;border:4px solid rgba(255,255,255,0.2);border-top-color:white;border-radius:50%;animation:spin 0.8s linear infinite;"></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
+      document.body.appendChild(loader);
+    }
+    loader.style.display = 'flex';
+  }
+
+  function hideLoading() {
+    const loader = document.getElementById('authLoader');
+    if (loader) loader.style.display = 'none';
+  }
 
   if (configured) {
     app       = initializeApp(firebaseConfig);
     auth      = getAuth(app);
     db        = getFirestore(app);
-    analytics = getAnalytics(app);
+    try { analytics = getAnalytics(app); } catch(e) {}
 
-    onAuthStateChanged(auth, user => {
+    // Show loading while Firebase checks auth state
+    showLoading();
+
+    onAuthStateChanged(auth, async user => {
+      hideLoading();
       currentUser = user;
       if (user) {
-        showApp(user);
+        await showApp(user);
       } else {
         showLogin();
       }
     });
   } else {
-    // Dev mode — skip auth, show app directly
     showApp(null);
-    console.warn("⚠️ Firebase not configured — running in demo mode. Leads won't be saved.");
+    console.warn("⚠️ Firebase not configured — demo mode.");
   }
 
-  // ── SIGN IN ──
+  // ── SIGN IN (popup — works now that domain is authorized) ──
   window.signInWithGoogle = async () => {
     if (!configured) { showApp(null); return; }
+    const errEl = document.getElementById('loginError');
+    const btn   = document.querySelector('.google-btn');
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.7'; }
+    if (errEl) errEl.style.display = 'none';
     try {
       const provider = new GoogleAuthProvider();
-      // Use redirect (works on GitHub Pages — popup is blocked cross-origin)
-      await signInWithRedirect(auth, provider);
+      provider.setCustomParameters({ prompt: 'select_account' });
+      await signInWithPopup(auth, provider);
+      // onAuthStateChanged will handle the rest
     } catch(e) {
-      document.getElementById('loginError').textContent = 'Sign-in failed: ' + e.message;
-      document.getElementById('loginError').style.display = 'block';
+      if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+      const msg = e.code === 'auth/popup-blocked'
+        ? 'Popup blocked! Please allow popups for this site in your browser settings.'
+        : e.code === 'auth/cancelled-popup-request' || e.code === 'auth/popup-closed-by-user'
+        ? 'Sign-in cancelled. Please try again.'
+        : 'Sign-in failed: ' + e.message;
+      if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
     }
   };
-
-  // ── HANDLE REDIRECT RESULT ON PAGE LOAD ──
-  if (configured) {
-    getRedirectResult(auth).then(result => {
-      if (result && result.user) {
-        showApp(result.user);
-      }
-    }).catch(e => {
-      console.error('Redirect result error:', e);
-    });
-  }
 
   // ── SIGN OUT ──
   window.doSignOut = async () => {
