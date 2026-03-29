@@ -8,10 +8,11 @@
 <!-- Firebase v10 -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
+  import { getAuth, GoogleAuthProvider, signInWithRedirect,
     getRedirectResult, signOut, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp }
+  import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, updateDoc,
+    doc, query, orderBy, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
 
@@ -29,10 +30,23 @@
     measurementId:     "G-NXNKT6G5FD"
   };
 
-  // Admin email — only this account sees the Leads Admin tab
-  const ADMIN_EMAIL = "rhyeeah@gmail.com";
+  // ─── CONFIG ───────────────────────────────────────────────
+  const ADMIN_EMAIL  = "rhyeeah@gmail.com";
+  const GCASH_NUMBER = "09XX XXX XXXX";   // ← PUT YOUR GCASH NUMBER HERE
+  const MAYA_NUMBER  = "09XX XXX XXXX";   // ← PUT YOUR MAYA NUMBER HERE (or leave same)
+  const PRICE_BASIC  = 99;   // ₱99  — calculator + PDF
+  const PRICE_FULL   = 199;  // ₱199 — everything unlocked
+  // ──────────────────────────────────────────────────────────
+
+  // Expose config to rest of app
+  window.GCASH_NUMBER = GCASH_NUMBER;
+  window.MAYA_NUMBER  = MAYA_NUMBER;
+  window.PRICE_BASIC  = PRICE_BASIC;
+  window.PRICE_FULL   = PRICE_FULL;
 
   let app, auth, db, analytics, currentUser = null;
+  let userIsPaid = false;
+  let userPlan   = null; // 'basic' | 'full'
   const configured = firebaseConfig.apiKey !== "YOUR_API_KEY";
 
   if (configured) {
@@ -82,7 +96,62 @@
   // ── SIGN OUT ──
   window.doSignOut = async () => {
     if (auth) await signOut(auth);
+    userIsPaid = false; userPlan = null;
     showLogin();
+  };
+
+  // ── CHECK PAYMENT STATUS ──
+  async function checkPaymentStatus(uid) {
+    if (!configured || !db) return false;
+    try {
+      const snap = await getDoc(doc(db, "users", uid));
+      if (snap.exists()) {
+        const d = snap.data();
+        userIsPaid = d.isPaid === true;
+        userPlan   = d.plan || null;
+        return userIsPaid;
+      }
+    } catch(e) { console.error("Payment check error:", e); }
+    return false;
+  }
+
+  // ── SUBMIT PAYMENT REQUEST ──
+  window.submitPaymentRequest = async (data) => {
+    if (!configured || !db || !currentUser) return false;
+    try {
+      await addDoc(collection(db, "payments"), {
+        ...data,
+        uid:       currentUser.uid,
+        userEmail: currentUser.email,
+        userName:  currentUser.displayName || '',
+        status:    'pending',
+        createdAt: serverTimestamp()
+      });
+      return true;
+    } catch(e) {
+      console.error("Payment submit error:", e);
+      return false;
+    }
+  };
+
+  // ── APPROVE PAYMENT (admin) ──
+  window.approvePayment = async (paymentId, uid, plan) => {
+    if (!configured || !db) return;
+    try {
+      await updateDoc(doc(db, "payments", paymentId), { status: 'approved', approvedAt: serverTimestamp() });
+      await setDoc(doc(db, "users", uid), { isPaid: true, plan, approvedAt: serverTimestamp() }, { merge: true });
+      loadPayments();
+      alert('✅ Payment approved! User now has ' + plan + ' access.');
+    } catch(e) { alert('Error: ' + e.message); }
+  };
+
+  // ── REJECT PAYMENT (admin) ──
+  window.rejectPayment = async (paymentId) => {
+    if (!configured || !db) return;
+    try {
+      await updateDoc(doc(db, "payments", paymentId), { status: 'rejected' });
+      loadPayments();
+    } catch(e) { alert('Error: ' + e.message); }
   };
 
   // ── SAVE LEAD TO FIRESTORE ──
@@ -95,17 +164,28 @@
         userEmail: currentUser ? currentUser.email : 'anonymous',
         createdAt: serverTimestamp()
       });
+    } catch(e) { console.error("Firestore save error:", e); }
+  };
+
+  // ── LOAD PAYMENTS (admin) ──
+  window.loadPayments = async () => {
+    if (!configured || !db) { renderPaymentsDemo(); return; }
+    if (!currentUser || currentUser.email !== ADMIN_EMAIL) return;
+    try {
+      const el = document.getElementById('paymentsBody');
+      if (el) el.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;">⏳ Loading...</td></tr>';
+      const q = query(collection(db, "payments"), orderBy("createdAt", "desc"));
+      const snap = await getDocs(q);
+      renderPayments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch(e) {
-      console.error("Firestore save error:", e);
+      const el = document.getElementById('paymentsBody');
+      if (el) el.innerHTML = `<tr><td colspan="8" style="color:var(--red);padding:20px;">${e.message}</td></tr>`;
     }
   };
 
-  // ── LOAD LEADS (admin only) ──
+  // ── LOAD LEADS (admin) ──
   window.loadLeads = async () => {
-    if (!configured || !db) {
-      renderLeadsDemo();
-      return;
-    }
+    if (!configured || !db) { renderLeadsDemo(); return; }
     if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
       document.getElementById('adminLeadsBody').innerHTML =
         '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">⛔ Admin access only.</td></tr>';
@@ -113,7 +193,7 @@
     }
     try {
       document.getElementById('adminLeadsBody').innerHTML =
-        '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">⏳ Loading...</td></tr>';
+        '<tr><td colspan="7" style="text-align:center;padding:20px;">⏳ Loading...</td></tr>';
       const q = query(collection(db, "leads"), orderBy("createdAt", "desc"));
       const snap = await getDocs(q);
       renderLeads(snap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -128,33 +208,87 @@
     document.getElementById('appShell').style.display  = 'none';
   }
 
-  function showApp(user) {
+  async function showApp(user) {
     document.getElementById('loginGate').style.display = 'none';
     document.getElementById('appShell').style.display  = 'block';
     if (user) {
-      // Update header avatar + name
       const avatar = document.getElementById('userAvatar');
       const uname  = document.getElementById('userName');
-      if (avatar) {
-        avatar.src   = user.photoURL || '';
-        avatar.style.display = user.photoURL ? 'block' : 'none';
-      }
+      if (avatar) { avatar.src = user.photoURL || ''; avatar.style.display = user.photoURL ? 'block' : 'none'; }
       if (uname) uname.textContent = user.displayName || user.email;
-      // Pre-fill lead form
       if (document.getElementById('leadName'))  document.getElementById('leadName').value  = user.displayName || '';
       if (document.getElementById('leadEmail')) document.getElementById('leadEmail').value = user.email || '';
-      // Show admin tab if admin
       if (user.email === ADMIN_EMAIL) {
         document.getElementById('adminTabBtn').style.display = 'inline-flex';
       }
+      // Check payment status then update UI
+      await checkPaymentStatus(user.uid);
+      updatePremiumUI();
     }
-    // Sign out button visibility
     const soBtn = document.getElementById('signOutBtn');
     if (soBtn) soBtn.style.display = user ? 'flex' : 'none';
-    // No-config banner
-    if (!configured) {
-      document.getElementById('noConfigBanner').style.display = 'flex';
+    if (!configured) document.getElementById('noConfigBanner').style.display = 'flex';
+  }
+
+  // Expose isPaid check to app JS
+  window.isPaidUser = () => userIsPaid || (currentUser && currentUser.email === ADMIN_EMAIL);
+  window.getUserPlan = () => userPlan;
+
+  function updatePremiumUI() {
+    const paid = window.isPaidUser();
+    // Update premium badge in header
+    const badge = document.getElementById('paidBadge');
+    if (badge) {
+      badge.style.display = paid ? 'inline-flex' : 'none';
+      badge.textContent = userPlan === 'full' ? '⭐ Full Access' : paid ? '✅ Basic' : '';
     }
+    // Update lock overlays on tabs
+    document.querySelectorAll('.tab-lock').forEach(el => {
+      el.style.display = paid ? 'none' : 'flex';
+    });
+  }
+
+  function renderPayments(payments) {
+    const tbody = document.getElementById('paymentsBody');
+    if (!payments || !payments.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">Wala pang payment requests.</td></tr>';
+      document.getElementById('pendingCount').textContent = '0 pending';
+      return;
+    }
+    const pending = payments.filter(p => p.status === 'pending').length;
+    document.getElementById('pendingCount').textContent = pending + ' pending';
+    tbody.innerHTML = payments.map(p => {
+      const dt = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString('en-PH') : '—';
+      const statusColor = p.status === 'approved' ? 'tag-green' : p.status === 'rejected' ? 'tag-red' : 'tag-orange';
+      const actionBtns = p.status === 'pending'
+        ? `<button onclick="approvePayment('${p.id}','${p.uid}','${p.plan}')" class="btn btn-green btn-sm" style="padding:5px 10px;font-size:0.75rem;">✅ Approve</button>
+           <button onclick="rejectPayment('${p.id}')" class="btn btn-sm" style="padding:5px 10px;font-size:0.75rem;background:#FFE5E5;color:var(--red);">✕ Reject</button>`
+        : `<span class="tag ${statusColor}">${p.status}</span>`;
+      return `<tr>
+        <td><strong>${p.userName || p.userEmail || '—'}</strong><br><small style="color:var(--muted)">${p.userEmail || ''}</small></td>
+        <td>${p.phone || '—'}</td>
+        <td><strong>₱${p.amount || '—'}</strong><br><small style="color:var(--muted)">${p.plan || ''}</small></td>
+        <td style="font-family:monospace;font-size:0.85rem;">${p.gcashRef || '—'}</td>
+        <td>${p.method || 'GCash'}</td>
+        <td><span class="tag ${statusColor}">${p.status}</span></td>
+        <td style="color:var(--muted);font-size:0.78rem;">${dt}</td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap;">${actionBtns}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderPaymentsDemo() {
+    const tbody = document.getElementById('paymentsBody');
+    if (!tbody) return;
+    tbody.innerHTML = `<tr>
+      <td><strong>Juan dela Cruz</strong><br><small>juan@gmail.com</small></td>
+      <td>09171234567</td><td><strong>₱199</strong><br><small>full</small></td>
+      <td style="font-family:monospace">GC-1234567890</td><td>GCash</td>
+      <td><span class="tag tag-orange">pending</span></td>
+      <td style="color:var(--muted);font-size:0.78rem;">Demo</td>
+      <td><button class="btn btn-green btn-sm" style="padding:5px 10px;font-size:0.75rem;" onclick="alert('Demo mode')">✅ Approve</button></td>
+    </tr>`;
+    if (document.getElementById('pendingCount')) document.getElementById('pendingCount').textContent = 'Demo mode';
   }
 
   function renderLeads(leads) {
@@ -1493,6 +1627,212 @@ body {
 }
 .stat-chip .val { font-weight: 800; font-size: 1.3rem; color: var(--dark); }
 .stat-chip .lbl { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+/* PAYMENT MODAL */
+.pay-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.pay-modal-overlay.open { display: flex; }
+.pay-modal-box {
+  background: white;
+  border-radius: 24px;
+  padding: 0;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.3);
+  animation: slideUp 0.3s ease;
+  overflow: hidden;
+  max-height: 92vh;
+  overflow-y: auto;
+}
+.pay-modal-top {
+  background: linear-gradient(135deg, var(--green), #0096C7);
+  padding: 24px 24px 20px;
+  color: white;
+  position: relative;
+}
+.pay-modal-top h2 {
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 800;
+  font-size: 1.3rem;
+  margin-bottom: 4px;
+}
+.pay-modal-top p { font-size: 0.83rem; opacity: 0.9; }
+.pay-modal-close {
+  position: absolute;
+  top: 14px; right: 16px;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  border-radius: 8px;
+  width: 30px; height: 30px;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.pay-modal-close:hover { background: rgba(255,255,255,0.35); }
+.pay-modal-body { padding: 22px 24px; }
+.plan-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.plan-card {
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+.plan-card:hover { border-color: var(--green-light); }
+.plan-card.selected {
+  border-color: var(--green);
+  background: linear-gradient(135deg, #E8F8EF, #D0F0E0);
+}
+.plan-price {
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 800;
+  font-size: 1.6rem;
+  color: var(--green);
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.plan-name {
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--dark);
+  margin-bottom: 6px;
+}
+.plan-features {
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.6;
+  text-align: left;
+}
+.gcash-box {
+  background: linear-gradient(135deg, #007AFF15, #007AFF08);
+  border: 2px solid #007AFF44;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.gcash-box .method-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.gcash-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #007AFF;
+  color: white;
+  border-radius: 10px;
+  padding: 6px 14px;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+.maya-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #00C853;
+  color: white;
+  border-radius: 10px;
+  padding: 6px 14px;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+.gcash-number {
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 800;
+  font-size: 1.4rem;
+  color: var(--dark);
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.gcash-amount {
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--green);
+}
+.gcash-steps {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 6px;
+  line-height: 1.6;
+}
+.pay-success-view {
+  text-align: center;
+  padding: 30px 20px;
+  display: none;
+}
+.pay-success-view .icon { font-size: 3rem; margin-bottom: 10px; }
+.pay-success-view h3 {
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: var(--green);
+  margin-bottom: 8px;
+}
+.pay-success-view p { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+
+/* TAB LOCK OVERLAY */
+.tab-wrapper { position: relative; }
+.tab-lock {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(3px);
+  border-radius: var(--radius);
+  z-index: 50;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 30px 20px;
+  margin-top: 0;
+}
+.lock-icon { font-size: 3rem; margin-bottom: 12px; }
+.lock-title {
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 800;
+  font-size: 1.3rem;
+  color: var(--dark);
+  margin-bottom: 6px;
+}
+.lock-sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+
+/* PAID BADGE IN HEADER */
+#paidBadge {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  background: var(--sun);
+  color: var(--dark);
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 800;
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
 </style>
 </head>
 <body>
@@ -1541,6 +1881,98 @@ body {
 <div class="pdf-print-header">
   <h1>☀️ Solar Power Nest — PH Solar Calculator Report</h1>
   <p>Negros Oriental Solar Energy Shop &nbsp;|&nbsp; facebook.com/negrosorientalsolarenergyshop &nbsp;|&nbsp; Generated: <span id="printDate"></span></p>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="pay-modal-overlay" id="payModal" onclick="closePayModalOutside(event)">
+  <div class="pay-modal-box">
+    <div class="pay-modal-top">
+      <button class="pay-modal-close" onclick="closePayModal()">✕</button>
+      <h2>🔓 I-unlock ang Full Access</h2>
+      <p>One-time payment lang — yours forever! GCash o Maya, 2 minutes lang.</p>
+    </div>
+    <div class="pay-modal-body">
+      <div id="payFormView">
+        <!-- Plan Selection -->
+        <div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px;">Piliin ang Plan</div>
+        <div class="plan-grid">
+          <div class="plan-card" id="planBasic" onclick="selectPlan('basic')">
+            <div class="plan-price">₱99</div>
+            <div class="plan-name">Basic</div>
+            <div class="plan-features">✅ Load Calculator<br>✅ System Sizer<br>✅ Cost Estimator<br>✅ PDF Export<br>❌ Wiring Diagram<br>❌ Brand Guide</div>
+          </div>
+          <div class="plan-card selected" id="planFull" onclick="selectPlan('full')">
+            <div class="plan-price">₱199</div>
+            <div class="plan-name">Full Access ⭐</div>
+            <div class="plan-features">✅ Load Calculator<br>✅ System Sizer<br>✅ Cost Estimator<br>✅ PDF Export<br>✅ Wiring Diagram<br>✅ Brand Guide + Compliance</div>
+          </div>
+        </div>
+
+        <!-- GCash/Maya Instructions -->
+        <div class="gcash-box">
+          <div class="method-row">
+            <div class="gcash-badge">💙 GCash</div>
+            <div class="maya-badge">💚 Maya</div>
+          </div>
+          <div class="gcash-number" id="payNumber">09XX XXX XXXX</div>
+          <div class="gcash-amount" id="payAmount">₱199</div>
+          <div class="gcash-steps">
+            1. Buksan ang GCash o Maya app<br>
+            2. Send Money → i-type ang number sa itaas<br>
+            3. Amount: <strong id="payAmountStep">₱199</strong><br>
+            4. I-screenshot ang reference number<br>
+            5. I-fill ang form sa ibaba ↓
+          </div>
+        </div>
+
+        <!-- Reference Number Form -->
+        <div class="modal-field">
+          <label>Inyong Pangalan *</label>
+          <input type="text" id="payName" placeholder="e.g. Juan dela Cruz">
+        </div>
+        <div class="modal-field">
+          <label>Contact Number *</label>
+          <input type="tel" id="payPhone" placeholder="09XX XXX XXXX">
+        </div>
+        <div class="modal-field">
+          <label>GCash / Maya Reference Number *</label>
+          <input type="text" id="payRef" placeholder="e.g. GC-1234567890" style="font-family:monospace;letter-spacing:1px;">
+        </div>
+        <div class="modal-field">
+          <label>Payment Method</label>
+          <select id="payMethod">
+            <option value="GCash">GCash</option>
+            <option value="Maya">Maya</option>
+          </select>
+        </div>
+
+        <div id="payError" style="color:var(--red);font-size:0.82rem;margin-bottom:10px;display:none;background:#FFE5E5;padding:10px;border-radius:8px;"></div>
+
+        <button class="btn btn-sun btn-block" style="font-size:1rem;padding:15px;" onclick="submitPayment()">
+          💸 Isumite ang Payment
+        </button>
+        <p style="font-size:0.75rem;color:var(--muted);text-align:center;margin-top:10px;">
+          Ang inyong access ay ia-activate sa loob ng <strong>24 oras</strong> pagkatapos ma-verify ang payment.
+          Para sa tulong: <strong>facebook.com/negrosorientalsolarenergyshop</strong>
+        </p>
+      </div>
+
+      <!-- Success View -->
+      <div class="pay-success-view" id="paySuccessView">
+        <div class="icon">🎉</div>
+        <h3>Salamat sa inyong payment!</h3>
+        <p>
+          Natanggap na namin ang inyong payment reference.<br><br>
+          Ia-activate ang inyong <strong id="paySuccessPlan">Full Access</strong> sa loob ng <strong>24 oras</strong>.<br><br>
+          Para sa mas mabilis na verification, i-message kami sa Facebook:
+        </p>
+        <a href="https://www.facebook.com/negrosorientalsolarenergyshop/" target="_blank"
+          class="btn btn-green" style="margin-top:14px;text-decoration:none;justify-content:center;">
+          📘 Message us on Facebook
+        </a>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- FLOATING PDF BUTTON -->
@@ -1645,6 +2077,7 @@ body {
       </div>
     </div>
     <div class="header-badge">🇵🇭 PH Solar Planner</div>
+    <div id="paidBadge">⭐ Full Access</div>
     <div class="user-chip">
       <img class="user-avatar" id="userAvatar" src="" alt="">
       <span class="user-name" id="userName"></span>
@@ -1665,7 +2098,7 @@ body {
     <button class="tab-btn" onclick="switchTab('brands', this)">🏷️ Brand Guide</button>
     <button class="tab-btn" onclick="switchTab('compliance', this)">✅ Compliance</button>
     <button class="tab-btn" onclick="switchTab('packages', this)" style="color:var(--orange);font-weight:900;">📦 Packages</button>
-    <button class="tab-btn" id="adminTabBtn" style="display:none;color:var(--red);font-weight:900;" onclick="switchTab('admin', this); loadLeads();">🔑 Leads Admin</button>
+    <button class="tab-btn" id="adminTabBtn" style="display:none;color:var(--red);font-weight:900;" onclick="switchTab('admin', this); loadPayments(); loadLeads();">🔑 Admin <span id="adminBadge" style="background:var(--orange);color:white;border-radius:10px;padding:1px 7px;font-size:0.7rem;"></span></button>
   </div>
 </div>
 
@@ -1751,7 +2184,8 @@ body {
 </div>
 
 <!-- ===================== TAB 2: RESULTS ===================== -->
-<div class="tab-panel" id="tab-results">
+<div class="tab-panel tab-wrapper" id="tab-results">
+  <div class="tab-lock" id="lock-results"><div class="lock-icon">🔒</div><div class="lock-title">Premium Feature</div><div class="lock-sub">I-unlock ang System Sizer.<br>One-time payment lang — ₱99 o ₱199.</div><button class="btn btn-sun" onclick="openPayModal()">💸 I-unlock Karon — ₱99 / ₱199</button></div>
   <div class="section-header">
     <h2>📊 Iyong Solar System</h2>
     <p>Based sa iyong mga appliances at system type.</p>
@@ -1766,7 +2200,8 @@ body {
 </div>
 
 <!-- ===================== TAB 3: COST ===================== -->
-<div class="tab-panel" id="tab-cost">
+<div class="tab-panel tab-wrapper" id="tab-cost">
+  <div class="tab-lock" id="lock-cost"><div class="lock-icon">🔒</div><div class="lock-title">Premium Feature</div><div class="lock-sub">I-unlock ang Cost Estimator.<br>Libre na ang installation namin — bayad lang ang tool.</div><button class="btn btn-sun" onclick="openPayModal()">💸 I-unlock Karon — ₱99 / ₱199</button></div>
   <div class="section-header">
     <h2>💰 Cost Estimator (Philippine Pesos)</div></div>
     <p>Rough na estimate ng gastos. Hindi kasama ang site-specific na labor o special parts.</p>
@@ -1781,7 +2216,8 @@ body {
 </div>
 
 <!-- ===================== TAB 4: DIAGRAM ===================== -->
-<div class="tab-panel" id="tab-diagram">
+<div class="tab-panel tab-wrapper" id="tab-diagram">
+  <div class="tab-lock" id="lock-diagram"><div class="lock-icon">🔒</div><div class="lock-title">Premium Feature</div><div class="lock-sub">I-unlock ang Wiring Diagrams (Off-Grid, On-Grid, Hybrid).<br>Available sa Full Access — ₱199 one-time.</div><button class="btn btn-sun" onclick="openPayModal()">💸 I-unlock Karon — ₱199</button></div>
   <div class="section-header">
     <h2>🔧 Wiring Diagram</h2>
     <p>Simplified na diagram para sa piniling system type mo.</p>
@@ -1805,7 +2241,8 @@ body {
 </div>
 
 <!-- ===================== TAB 5: BRANDS ===================== -->
-<div class="tab-panel" id="tab-brands">
+<div class="tab-panel tab-wrapper" id="tab-brands">
+  <div class="tab-lock" id="lock-brands"><div class="lock-icon">🔒</div><div class="lock-title">Premium Feature</div><div class="lock-sub">I-unlock ang Brand Guide + Compliance Checklist.<br>Available sa Full Access — ₱199 one-time.</div><button class="btn btn-sun" onclick="openPayModal()">💸 I-unlock Karon — ₱199</button></div>
   <div class="section-header">
     <h2>🏷️ Brand Recommender</h2>
     <p>"Ano magandang brand?" — narito na ang sagot.</p>
@@ -1920,7 +2357,8 @@ body {
 </div>
 
 <!-- ===================== TAB 6: COMPLIANCE ===================== -->
-<div class="tab-panel" id="tab-compliance">
+<div class="tab-panel tab-wrapper" id="tab-compliance">
+  <div class="tab-lock" id="lock-compliance"><div class="lock-icon">🔒</div><div class="lock-title">Premium Feature</div><div class="lock-sub">I-unlock ang Compliance Checklist.<br>Available sa Full Access — ₱199 one-time.</div><button class="btn btn-sun" onclick="openPayModal()">💸 I-unlock Karon — ₱199</button></div>
   <div class="section-header">
     <h2>✅ Compliance Checklist</h2>
     <p>I-check ang bawat item bago mag-install. Pindutin para i-mark bilang tapos.</p>
@@ -2131,7 +2569,14 @@ body {
       <li>Sa Firebase Console → <strong>Authentication</strong> → Sign-in method → I-enable ang <strong>Google</strong></li>
       <li>Sa Firebase Console → <strong>Firestore Database</strong> → Create database → Start in <strong>production mode</strong></li>
       <li>Sa Firestore → Rules → i-paste ito:<br>
-        <code>rules_version = '2'; service cloud.firestore { match /databases/{database}/documents { match /leads/{doc} { allow read: if request.auth != null; allow write: if request.auth != null; } } }</code>
+<code>rules_version = '2';<br>
+service cloud.firestore {<br>
+&nbsp;&nbsp;match /databases/{database}/documents {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;match /leads/{doc} { allow read, write: if request.auth != null; }<br>
+&nbsp;&nbsp;&nbsp;&nbsp;match /payments/{doc} { allow read, write: if request.auth != null; }<br>
+&nbsp;&nbsp;&nbsp;&nbsp;match /users/{uid} { allow read, write: if request.auth != null; }<br>
+&nbsp;&nbsp;}<br>
+}</code>
       </li>
       <li>I-update ang <code>ADMIN_EMAIL</code> sa script sa inyong Google email para makita ang Leads Admin tab</li>
       <li>I-deploy ang HTML sa <strong>Firebase Hosting</strong> o <strong>GitHub Pages</strong> — tapos na! 🎉</li>
@@ -2139,14 +2584,15 @@ body {
   </div>
 
   <!-- Stats row -->
+  <!-- Stats -->
   <div class="stat-chips">
+    <div class="stat-chip" style="border-color:var(--orange);">
+      <div class="val" id="pendingCount" style="color:var(--orange);">—</div>
+      <div class="lbl">Pending Payments</div>
+    </div>
     <div class="stat-chip">
       <div class="val" id="leadCount">—</div>
       <div class="lbl">Total Leads</div>
-    </div>
-    <div class="stat-chip">
-      <div class="val" id="todayCount">—</div>
-      <div class="lbl">Today</div>
     </div>
     <div class="stat-chip" style="border-color:var(--green);">
       <div class="val" style="color:var(--green);">FREE</div>
@@ -2154,27 +2600,50 @@ body {
     </div>
   </div>
 
+  <!-- PAYMENTS TABLE -->
+  <div class="card" style="border-left:4px solid var(--orange);">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+      <div class="card-title" style="margin:0;">💸 Payment Requests</div>
+      <button class="btn btn-outline btn-sm" onclick="loadPayments()">🔄 Refresh</button>
+    </div>
+    <div class="alert alert-warn" style="margin-bottom:12px;">
+      <span>ℹ️</span>
+      <div>I-verify ang GCash/Maya reference number sa inyong app bago mag-approve. Pag approved, automatic na ma-u-unlock ang access ng user.</div>
+    </div>
+    <div class="leads-table-wrap">
+      <table class="leads-table">
+        <thead>
+          <tr>
+            <th>User</th><th>Phone</th><th>Amount</th><th>Ref Number</th>
+            <th>Method</th><th>Status</th><th>Date</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="paymentsBody">
+          <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">
+            Click "Refresh" to load payments.
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- LEADS TABLE -->
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
-      <div class="card-title" style="margin:0;">📋 All Lead Submissions</div>
+      <div class="card-title" style="margin:0;">📋 Lead Submissions (PDF requests)</div>
       <button class="btn btn-outline btn-sm" onclick="loadLeads()">🔄 Refresh</button>
     </div>
     <div class="leads-table-wrap">
       <table class="leads-table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Phone</th>
-            <th>Location</th>
-            <th>System</th>
-            <th>Budget</th>
-            <th>Load</th>
-            <th>Date</th>
+            <th>Name</th><th>Phone</th><th>Location</th>
+            <th>System</th><th>Budget</th><th>Load</th><th>Date</th>
           </tr>
         </thead>
         <tbody id="adminLeadsBody">
           <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">
-            Click "Refresh" or navigate here to load leads.
+            Click "Refresh" to load leads.
           </td></tr>
         </tbody>
       </table>
@@ -2599,7 +3068,7 @@ function switchTab(tab, btn) {
   if (panel) panel.classList.add('active');
   if (btn) btn.classList.add('active');
   if (tab === 'diagram') showDiagram(systemType);
-  if (tab === 'admin') loadLeads();
+  if (tab === 'admin') { loadPayments(); loadLeads(); }
 }
 
 // ==================== WIRING DIAGRAMS ====================
@@ -3031,6 +3500,73 @@ function init() {
   renderChecklist();
   showDiagram('offgrid');
   calculate();
+}
+
+// ==================== PAYMENT MODAL ====================
+let selectedPlan = 'full';
+
+function openPayModal() {
+  document.getElementById('payModal').classList.add('open');
+  document.getElementById('payFormView').style.display = 'block';
+  document.getElementById('paySuccessView').style.display = 'none';
+  document.getElementById('payError').style.display = 'none';
+  document.body.style.overflow = 'hidden';
+  updatePayDisplay();
+  // Pre-fill name/phone from lead form if available
+  const n = document.getElementById('leadName');
+  const p = document.getElementById('leadPhone');
+  if (n && n.value) document.getElementById('payName').value = n.value;
+  if (p && p.value) document.getElementById('payPhone').value = p.value;
+}
+
+function closePayModal() {
+  document.getElementById('payModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closePayModalOutside(e) {
+  if (e.target === document.getElementById('payModal')) closePayModal();
+}
+
+function selectPlan(plan) {
+  selectedPlan = plan;
+  document.getElementById('planBasic').classList.toggle('selected', plan === 'basic');
+  document.getElementById('planFull').classList.toggle('selected', plan === 'full');
+  updatePayDisplay();
+}
+
+function updatePayDisplay() {
+  const amt = selectedPlan === 'full' ? window.PRICE_FULL : window.PRICE_BASIC;
+  const num = window.GCASH_NUMBER || '09XX XXX XXXX';
+  document.getElementById('payNumber').textContent = num;
+  document.getElementById('payAmount').textContent = '₱' + amt;
+  document.getElementById('payAmountStep').textContent = '₱' + amt;
+}
+
+async function submitPayment() {
+  const name  = document.getElementById('payName').value.trim();
+  const phone = document.getElementById('payPhone').value.trim();
+  const ref   = document.getElementById('payRef').value.trim();
+  const method= document.getElementById('payMethod').value;
+  const errEl = document.getElementById('payError');
+
+  if (!name || !phone || !ref) {
+    errEl.textContent = '⚠️ Pakisulat ang pangalan, number, at reference number.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const amt = selectedPlan === 'full' ? window.PRICE_FULL : window.PRICE_BASIC;
+  const submitted = await window.submitPaymentRequest({
+    name, phone, gcashRef: ref, method,
+    plan: selectedPlan, amount: amt
+  });
+
+  document.getElementById('payFormView').style.display = 'none';
+  document.getElementById('paySuccessView').style.display = 'block';
+  document.getElementById('paySuccessPlan').textContent =
+    selectedPlan === 'full' ? 'Full Access (₱199)' : 'Basic Access (₱99)';
 }
 
 // ==================== LEAD CAPTURE + PDF ====================
