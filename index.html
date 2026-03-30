@@ -915,6 +915,7 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
     <button class="tab-btn" onclick="switchTab('comparison',this)">🔄 Comparison</button>
     <button class="tab-btn" onclick="switchTab('brands',this)">🛒 Brand Guide</button>
     <button class="tab-btn" onclick="switchTab('compliance',this)">✅ Compliance</button>
+    <button class="tab-btn" onclick="switchTab('diagram',this)">🔧 Wiring Diagram</button>
     <button class="tab-btn" onclick="switchTab('faq',this)">❓ FAQ</button>
     <button class="tab-btn" onclick="switchTab('packages',this)" style="color:var(--orange);font-weight:900;">📦 Packages</button>
     <button class="tab-btn" id="adminTabBtn" style="display:none;color:var(--red);font-weight:900;" onclick="switchTab('admin',this);">🔑 Admin</button>
@@ -1035,9 +1036,70 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
     </div>
   </div>
 
-  <button class="btn btn-sun btn-block" style="font-size:1rem;padding:15px;" onclick="calculate();switchTab('results',document.querySelectorAll('.tab-btn')[1])">
+  <button class="btn btn-sun btn-block" style="font-size:1rem;padding:15px;" onclick="calculate();scrollToEstimate()">
     ☀️ KALKULAHIN ANG SISTEMA KO →
   </button>
+
+  <!-- FREE ESTIMATE PREVIEW — visible to everyone -->
+  <div id="freeEstimate" style="display:none;margin-top:20px;">
+    <div style="background:linear-gradient(135deg,#1B7A4A,#0096C7);border-radius:16px;padding:20px 22px;color:white;margin-bottom:16px;">
+      <div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.1rem;margin-bottom:4px;">☀️ Ang Rough Estimate ng Sistema Mo</div>
+      <div style="font-size:0.82rem;opacity:0.9;">Based sa iyong mga appliances — libreng preview. I-unlock ang Full Details para sa exact breakdown.</div>
+    </div>
+
+    <!-- KEY NUMBERS -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px;">
+      <div style="background:white;border-radius:12px;padding:14px;border:1.5px solid var(--border);text-align:center;">
+        <div id="fe_load" style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.4rem;color:var(--dark);">—</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">Wh/day (Daily Load)</div>
+      </div>
+      <div style="background:white;border-radius:12px;padding:14px;border:1.5px solid var(--border);text-align:center;">
+        <div id="fe_panel" style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.4rem;color:var(--green);">—</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">Panel Size (Wp)</div>
+      </div>
+      <div style="background:white;border-radius:12px;padding:14px;border:1.5px solid var(--border);text-align:center;">
+        <div id="fe_batt" style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.4rem;color:var(--sky);">—</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">Battery (Ah @ 24V)</div>
+      </div>
+      <div style="background:white;border-radius:12px;padding:14px;border:1.5px solid var(--border);text-align:center;">
+        <div id="fe_inv" style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.4rem;color:var(--orange);">—</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">Inverter Size</div>
+      </div>
+    </div>
+
+    <!-- ROUGH COST TABLE -->
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title">💰 Rough Cost Breakdown <span style="font-size:0.75rem;font-weight:600;color:var(--muted);font-family:'Nunito',sans-serif;">(2026 PH prices, DIY estimate)</span></div>
+      <div class="card-sub">Puro materials lang — hindi kasama ang labor. Para sa libre na installation sa Negros Oriental, i-message kami!</div>
+      <table class="summary-table">
+        <thead><tr><th>Component</th><th>Rough Range</th><th>Notes</th></tr></thead>
+        <tbody id="fe_table"></tbody>
+      </table>
+      <div id="fe_total" style="background:linear-gradient(135deg,var(--green),#0096C7);color:white;border-radius:12px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:14px;">
+        <div>
+          <div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:0.95rem;">💰 ESTIMATED TOTAL (Materials Only)</div>
+          <div style="font-size:0.75rem;opacity:0.85;">Hindi kasama ang labor. Libre ang installation sa Negros Oriental! ☀️</div>
+        </div>
+        <div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.6rem;" id="fe_totalamt">—</div>
+      </div>
+    </div>
+
+    <!-- WHAT CAN THIS POWER -->
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title">💡 Ano ang Kaya Nitong I-power?</div>
+      <div class="power-grid" id="fe_power"></div>
+    </div>
+
+    <!-- CTA TO UNLOCK FULL -->
+    <div style="background:var(--yellow-light);border:2px solid var(--sun);border-radius:14px;padding:18px;text-align:center;">
+      <div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1rem;color:var(--dark);margin-bottom:6px;">🔓 Gusto mo ng mas detailed na report?</div>
+      <div style="font-size:0.83rem;color:var(--muted);margin-bottom:14px;">I-unlock ang Full Access para sa: Wiring Diagram, Brand Guide + Shopee links, Compliance Checklist, at downloadable PDF Report.</div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn btn-sun" onclick="openPayModal()">⭐ I-unlock ang Full Access — ₱99</button>
+        <a href="https://www.facebook.com/negrosorientalsolarenergyshop/" target="_blank" class="btn btn-outline" style="text-decoration:none;">📘 O mag-message para sa libre na quotation</a>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ===== TAB: RESULTS ===== -->
@@ -1442,6 +1504,67 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
   </div>
 </div>
 
+
+<!-- ===== TAB: WIRING DIAGRAM ===== -->
+<div class="tab-panel tab-wrapper" id="tab-diagram">
+  <div class="tab-lock" id="lock-diagram">
+    <div class="lock-icon">🔒</div>
+    <div class="lock-title">Premium Feature</div>
+    <div class="lock-sub">I-unlock ang Wiring Diagrams — Off-Grid, On-Grid, at Hybrid.<br>Available sa Full Access — ₱99 one-time.</div>
+    <button class="btn btn-sun" onclick="openPayModal()">💸 I-unlock Karon — ₱99</button>
+  </div>
+
+  <div class="section-header">
+    <h2>🔧 Wiring Diagram</h2>
+    <p>Step-by-step na connection guide para sa bawat sistema. Easy to follow para sa DIY installers.</p>
+  </div>
+
+  <div class="card">
+    <div class="flex-center gap-8 mb-16" style="flex-wrap:wrap;">
+      <button class="btn btn-green btn-sm" id="diagBtnOffgrid" onclick="showDiagram('offgrid')">🔋 Off-Grid</button>
+      <button class="btn btn-outline btn-sm" id="diagBtnOngrid" onclick="showDiagram('ongrid')">🔌 On-Grid</button>
+      <button class="btn btn-outline btn-sm" id="diagBtnHybrid" onclick="showDiagram('hybrid')">⚡ Hybrid</button>
+    </div>
+
+    <div id="diagramTitle" style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.1rem;color:var(--dark);margin-bottom:14px;">🔋 Off-Grid System</div>
+
+    <!-- SIMPLE DIAGRAM -->
+    <div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">📐 System Overview Diagram</div>
+    <div style="background:#0D1B2A;border-radius:14px;padding:16px;overflow-x:auto;margin-bottom:20px;">
+      <div id="diagramContainer" style="min-width:600px;"></div>
+    </div>
+
+    <!-- LEGEND -->
+    <div style="background:var(--dark);border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:14px;" id="diagramLegend"></div>
+
+    <!-- STEP BY STEP GUIDE -->
+    <div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">📋 Step-by-Step Connection Guide</div>
+    <div id="stepGuide"></div>
+
+    <!-- WIRE SIZES TABLE -->
+    <div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin:18px 0 10px;">🔌 Wire Size Reference (from your doc)</div>
+    <div style="overflow-x:auto;">
+      <table class="summary-table" style="min-width:500px;">
+        <thead><tr>
+          <th>Connection</th><th>Wire Size</th><th>Breaker Type</th><th>Rating</th><th>Notes</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>Solar Panel → MPPT/Inverter</td><td><strong>6mm² (PV Wire)</strong></td><td>DC MCB</td><td>25–30A</td><td>UV-resistant, MC4 connectors</td></tr>
+          <tr><td>Battery → Inverter</td><td><strong>25–35mm²</strong></td><td>DC MCCB</td><td>100–125A</td><td>As short as possible</td></tr>
+          <tr><td>MPPT → Battery</td><td><strong>10–16mm²</strong></td><td>DC MCB</td><td>40–63A</td><td>Depende sa MPPT amperage</td></tr>
+          <tr><td>Inverter → AC Load</td><td><strong>2.0–3.5mm² (#14–#12)</strong></td><td>AC MCB</td><td>6–20A</td><td>Standard AC wiring</td></tr>
+          <tr><td>Ground Wire</td><td><strong>6mm² (Green-Yellow)</strong></td><td>—</td><td>—</td><td>All components grounded</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="alert alert-warn">
+    <span>⚠️</span>
+    <div><strong>Disclaimer:</strong> Ang mga diagram na ito ay para sa educational reference lamang. Para sa aktwal na installation, kumonsulta sa licensed electrical professional at sundin ang Philippine Electrical Code (PEC). Para sa Negros Oriental — libre ang aming installation service, kasama na ang proper wiring!</div>
+  </div>
+</div>
+
 <!-- ===== TAB: FAQ ===== -->
 <div class="tab-panel" id="tab-faq">
   <div class="section-header"><h2>❓ Frequently Asked Questions</h2><p>Mga madalas na tanong tungkol sa solar sa Pilipinas. I-click ang tanong para makita ang sagot.</p></div>
@@ -1809,6 +1932,90 @@ function setSunHours(h, btn) {
 }
 
 // ============================================================
+// SCROLL TO FREE ESTIMATE
+// ============================================================
+function scrollToEstimate() {
+  calculate();
+  const el = document.getElementById('freeEstimate');
+  if (el) {
+    el.style.display = 'block';
+    setTimeout(() => el.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+  }
+  updateFreeEstimate();
+}
+
+function updateFreeEstimate() {
+  const r = calcResult;
+  if (!r || r.totalWh === 0) return;
+
+  // Key numbers
+  const feLoad  = document.getElementById('fe_load');
+  const fePanel = document.getElementById('fe_panel');
+  const feBatt  = document.getElementById('fe_batt');
+  const feInv   = document.getElementById('fe_inv');
+  if (feLoad)  feLoad.textContent  = r.totalWh.toFixed(0) + ' Wh';
+  if (fePanel) fePanel.textContent = r.panelWp + ' Wp';
+  if (feBatt)  feBatt.textContent  = r.systemType !== 'ongrid' ? r.battAh + ' Ah' : 'N/A';
+  if (feInv)   feInv.textContent   = r.inverterW + 'W';
+
+  // Cost breakdown (same logic as renderCost)
+  const fmt = n => '₱' + Math.round(n).toLocaleString();
+  const panelLow  = r.panelCount200 * 3500;
+  const panelHigh = r.panelCount200 * 5000;
+  let battLow = 0, battHigh = 0;
+  if (r.systemType !== 'ongrid') { battLow = r.battCount100Ah * 6000; battHigh = r.battCount100Ah * 12000; }
+  const invKw = r.inverterW / 1000;
+  let invLow, invHigh;
+  if (invKw <= 1)      { invLow = 5000;  invHigh = 7000; }
+  else if (invKw <= 2) { invLow = 8000;  invHigh = 14000; }
+  else if (invKw <= 3) { invLow = 12000; invHigh = 25000; }
+  else                  { invLow = 20000; invHigh = 50000; }
+  if (r.systemType === 'hybrid') { invLow *= 1.8; invHigh *= 1.8; }
+  let mpptLow = 0, mpptHigh = 0;
+  if (r.systemType === 'offgrid') {
+    const m = Math.ceil(r.mpptA / 20);
+    mpptLow = m * 3000; mpptHigh = m * 4000;
+  }
+  const bosLow = 2500, bosHigh = 5000;
+  const mountLow = 1200, mountHigh = 3000;
+  const totalLow  = panelLow  + battLow  + invLow  + mpptLow  + bosLow  + mountLow;
+  const totalHigh = panelHigh + battHigh + invHigh + mpptHigh + bosHigh + mountHigh;
+
+  const rows = [
+    [`☀️ Solar Panels (${r.panelCount200} x ~200W)`, `${fmt(panelLow)} – ${fmt(panelHigh)}`, '₱3,500–₱5,000 per 200W'],
+  ];
+  if (r.systemType !== 'ongrid') rows.push([`🔋 Battery (${r.battCount100Ah} x 100Ah LiFePO4)`, `${fmt(battLow)} – ${fmt(battHigh)}`, '₱6,000–₱12,000 per 100Ah']);
+  rows.push([`⚡ Inverter ${r.inverterW}W (${r.systemType==='hybrid'?'Hybrid':'Pure Sine'})`, `${fmt(invLow)} – ${fmt(invHigh)}`, 'Depende sa brand']);
+  if (r.systemType === 'offgrid') rows.push([`🔆 MPPT Controller (~${r.mpptA}A)`, `${fmt(mpptLow)} – ${fmt(mpptHigh)}`, '₱3,000–₱4,000 per 20A']);
+  rows.push(['🔌 Wires, Breakers, Fuses, Box', `${fmt(bosLow)} – ${fmt(bosHigh)}`, 'DC MCB, MC4, panel box']);
+  rows.push(['🔩 Mounting Materials', `${fmt(mountLow)} – ${fmt(mountHigh)}`, 'Rails, clamps, sealant']);
+  rows.push(['🛠️ Installation & Labor', '<span style="color:var(--green);font-weight:800;">LIBRE!</span>', 'Para sa Negros Oriental ☀️']);
+
+  const tbody = document.getElementById('fe_table');
+  if (tbody) tbody.innerHTML = rows.map(([c,v,n]) => `<tr><td>${c}</td><td><strong>${v}</strong></td><td style="color:var(--muted);font-size:0.8rem;">${n}</td></tr>`).join('');
+
+  const totalEl = document.getElementById('fe_totalamt');
+  if (totalEl) totalEl.textContent = `${fmt(totalLow)} – ${fmt(totalHigh)}`;
+
+  // What can this power
+  const canPower = {
+    'LED Lights':     r.totalWh >= 40,
+    'Electric Fan':   r.totalWh >= 100,
+    'LED TV':         r.totalWh >= 180,
+    'WiFi Router':    r.totalWh >= 200,
+    'Ref (Small)':    r.totalWh >= 500,
+    'Laptop':         r.totalWh >= 200,
+    'Washing Machine':r.totalWh >= 600,
+    'Aircon 0.5HP':   r.totalWh >= 2000,
+    'Aircon 1HP':     r.totalWh >= 3500,
+  };
+  const powerEl = document.getElementById('fe_power');
+  if (powerEl) powerEl.innerHTML = Object.entries(canPower).map(([name,ok]) =>
+    `<div class="power-item ${ok?'power-yes':'power-no'}">${ok?'✅':'❌'} ${name}</div>`
+  ).join('');
+}
+
+// ============================================================
 // BUDGET FILTER
 // ============================================================
 const BUDGET_DATA = {
@@ -2077,7 +2284,7 @@ function switchTab(tab, btn) {
   const panel = document.getElementById('tab-' + tab);
   if (panel) panel.classList.add('active');
   if (btn) btn.classList.add('active');
-  if (tab==='diagram') showDiagram(systemType);
+  if (tab==='diagram') { showDiagram(systemType); }
   if (tab==='admin') { loadPayments(); loadLeads(); }
 }
 
@@ -2290,6 +2497,399 @@ window.renderLeadsDemo = function() {
 // Also expose updatePremiumUI for Firebase module
 window.updatePremiumUI = updatePremiumUI;
 
+
+// ============================================================
+// WIRING DIAGRAMS
+// ============================================================
+function showDiagram(type) {
+  // Update buttons
+  ['offgrid','ongrid','hybrid'].forEach(t => {
+    const btn = document.getElementById('diagBtn'+t.charAt(0).toUpperCase()+t.slice(1));
+    if (btn) { btn.className = t===type ? 'btn btn-green btn-sm' : 'btn btn-outline btn-sm'; }
+  });
+
+  const titles = {
+    offgrid: '🔋 Off-Grid System — PV + MPPT + Battery + Inverter + Load',
+    ongrid:  '🔌 On-Grid System — PV + Grid-Tie Inverter + Utility Grid',
+    hybrid:  '⚡ Hybrid System — PV + Hybrid Inverter + Battery + Grid + Load'
+  };
+  const titleEl = document.getElementById('diagramTitle');
+  if (titleEl) titleEl.textContent = titles[type];
+
+  const diagrams = { offgrid: drawOffGrid(), ongrid: drawOnGrid(), hybrid: drawHybrid() };
+  const container = document.getElementById('diagramContainer');
+  if (container) container.innerHTML = diagrams[type];
+
+  const legends = {
+    offgrid: `<div style="color:white;font-size:0.78rem;font-weight:600;display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:#FFD700;border-radius:3px;"></div>DC Wire (Solar)</div>
+              <div style="color:white;font-size:0.78rem;font-weight:600;display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:#00CC66;border-radius:3px;"></div>DC Wire (Battery)</div>
+              <div style="color:white;font-size:0.78rem;font-weight:600;display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:#FF6B35;border-radius:3px;"></div>AC Wire (Load)</div>
+              <div style="color:white;font-size:0.78rem;font-weight:600;display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:#64B5F6;border-radius:3px;"></div>Ground Wire</div>`,
+    ongrid:  `<div style="color:white;font-size:0.78rem;font-weight:600;display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:#FFD700;border-radius:3px;"></div>DC Wire (Solar)</div>
+              <div style="color:white;font-size:0.78rem;font-weight:600;display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:#FF6B35;border-radius:3px;"></div>AC Wire</div>
+              <div style="color:white;font-size:0.78rem;font-weight:600;display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:#00CC66;border-radius:3px;"></div>Grid Connection (Bidirectional)</div>`,
+    hybrid:  `<div style="color:white;font-size:0.78rem;font-weight:600;display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:#FFD700;border-radius:3px;"></div>DC Wire (Solar)</div>
+              <div style="color:white;font-size:0.78rem;font-weight:600;display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:#00CC66;border-radius:3px;"></div>DC Wire (Battery)</div>
+              <div style="color:white;font-size:0.78rem;font-weight:600;display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:#FF6B35;border-radius:3px;"></div>AC Wire (Load/Grid)</div>`
+  };
+  const legendEl = document.getElementById('diagramLegend');
+  if (legendEl) legendEl.innerHTML = legends[type];
+
+  // Step-by-step guides
+  const steps = {
+    offgrid: [
+      {n:1, icon:'☀️', title:'Solar Panels → DC Fuse / Combiner', color:'#FFD700', desc:'I-connect ang positive at negative ng solar panels sa MC4 connectors. Lagyan ng DC fuse (25–30A) bago sa MPPT para proteksyon. Gamitin ang 6mm² PV wire (UV-resistant).'},
+      {n:2, icon:'🔆', title:'DC Fuse → MPPT Charge Controller (PV Input)', color:'#FFD700', desc:'Mula sa DC fuse, i-connect sa PV Input ng MPPT controller. I-match ang voltage at amperage ng controller sa iyong panels. Ang MPPT ang mag-re-regulate ng solar energy papunta sa battery.'},
+      {n:3, icon:'🔋', title:'MPPT Charge Controller → Battery Bank (Charge Output)', color:'#00CC66', desc:'Mula sa Battery terminal ng MPPT, i-connect sa battery. Lagyan ng DC MCB (40–63A) sa pagitan. Gamitin ang 10–16mm² wire. Laging i-connect ang negative muna bago ang positive.'},
+      {n:4, icon:'🛡️', title:'Battery → DC-MCCB (Main Protection)', color:'#00CC66', desc:'Mula sa battery, lagyan ng main DC circuit breaker (100–125A MCCB) bago sa inverter. Ito ang pangunahing protection ng buong sistema. Gamitin ang 25–35mm² na battery wire.'},
+      {n:5, icon:'⚡', title:'DC-MCCB → Inverter (DC Input)', color:'#BB86FC', desc:'I-connect ang DC output mula sa MCCB papunta sa DC input ng pure sine wave inverter. I-check ang voltage compatibility (12V o 24V system). Ang inverter ang mag-co-convert ng DC papuntang AC.'},
+      {n:6, icon:'🏠', title:'Inverter (AC Output) → AC Panel Board → Loads', color:'#FF6B35', desc:'Mula sa AC output ng inverter, i-connect sa AC distribution panel board. Lagyan ng AC MCB (6–20A) para sa bawat circuit. Mula sa panel board, i-connect na sa iyong mga appliances.'},
+      {n:7, icon:'⏚', title:'Grounding ng Lahat ng Components', color:'#64B5F6', desc:'Ground ang panel frames, inverter enclosure, at battery negative sa isang common ground point. Gamitin ang 6mm² green-yellow wire. Ito ang pinaka-importanteng safety measure — huwag preskihin!'},
+    ],
+    ongrid: [
+      {n:1, icon:'☀️', title:'Solar Panels → String Combiner + DC Fuse', color:'#FFD700', desc:'I-connect ang solar panels in series/parallel depende sa inverter spec. Lagyan ng DC fuse at surge arrester. Gamitin ang 6mm² UV-resistant PV wire at MC4 connectors.'},
+      {n:2, icon:'🔆', title:'DC Combiner → Grid-Tie Inverter (DC Input)', color:'#FFD700', desc:'Mula sa combiner box, i-connect sa DC input ng grid-tie inverter. Ang inverter ay may built-in MPPT — walang separate na MPPT controller ang kailangan para sa on-grid.'},
+      {n:3, icon:'🔄', title:'Grid-Tie Inverter → AC Panel Board', color:'#FF6B35', desc:'Mula sa AC output ng inverter, i-connect sa dedicated circuit breaker sa inyong main AC panel. Ang inverter ay automatic na mag-o-off kapag nawala ang grid (anti-islanding protection).'},
+      {n:4, icon:'🔌', title:'AC Panel Board → Bidirectional Net Meter', color:'#00CC66', desc:'Ang utility company ang mag-i-install ng bidirectional net meter. Ito ang magsu-sukat kung gaano karaming solar energy ang in-export at in-import mula sa grid.'},
+      {n:5, icon:'🏙️', title:'Net Meter → Utility Grid (Meralco / NORECO / etc.)', color:'#00CC66', desc:'Ang koneksyon sa grid ay hawak ng utility company. Kailangan ng formal na Net Metering Application bago ito i-connect. Huwag mag-export nang walang approval at tamang meter.'},
+      {n:6, icon:'⏚', title:'Grounding ng Lahat ng Components', color:'#64B5F6', desc:'I-ground ang panel frames, inverter enclosure, at lahat ng metal parts. Sundin ang PEC requirements para sa grounding. Kailangan ito para sa permit approval.'},
+    ],
+    hybrid: [
+      {n:1, icon:'☀️', title:'Solar Panels → DC Fuse / String Combiner', color:'#FFD700', desc:'I-connect ang solar panels sa MC4 connectors. Lagyan ng DC fuse (25–30A). Gamitin ang 6mm² UV-resistant PV wire. Ang Hybrid inverter ay may built-in MPPT.'},
+      {n:2, icon:'⚡', title:'DC Fuse → Hybrid Inverter (PV Input)', color:'#FFD700', desc:'Mula sa DC fuse, direkta sa PV Input terminals ng hybrid inverter. Ang hybrid inverter ay all-in-one — may built-in MPPT, battery charger, at grid-tie functionality.'},
+      {n:3, icon:'🔋', title:'Battery Bank ↔ Hybrid Inverter (Battery Port)', color:'#00CC66', desc:'I-connect ang battery sa dedicated Battery terminals ng hybrid inverter. Lagyan ng DC MCB (100–125A) sa pagitan. Gamitin ang 25–35mm² wire. Ang inverter ang mag-ma-manage ng charging at discharging.'},
+      {n:4, icon:'🌐', title:'Hybrid Inverter ↔ Utility Grid (Grid Port)', color:'#00CC66', desc:'I-connect ang Grid port ng inverter sa inyong utility connection (may AC circuit breaker). Kapag may araw at full battery — nag-e-export ang sobra sa grid. Kapag kulang — nag-i-import mula sa grid.'},
+      {n:5, icon:'🏠', title:'Hybrid Inverter (Load Output) → AC Panel → Loads', color:'#FF6B35', desc:'Mula sa Load output ng hybrid inverter, i-connect sa inyong AC distribution panel. Mula doon, lahat ng iyong appliances. Kapag brownout — ang battery ang mag-su-supply ng kuryente.'},
+      {n:6, icon:'🔄', title:'Net Meter Installation (para sa Export)', color:'#FF6B35', desc:'Para mag-export sa grid at makakuha ng net metering credits — kailangan ng bidirectional meter mula sa utility. I-apply sa inyong utility company (NORECO, Meralco, etc.) bago i-connect.'},
+      {n:7, icon:'⏚', title:'Grounding ng Lahat ng Components', color:'#64B5F6', desc:'I-ground ang panel frames, inverter enclosure, battery enclosure, at lahat ng metal parts. Gamitin ang 6mm² green-yellow wire. Required ito para sa permit at safety.'},
+    ]
+  };
+
+  const stepHtml = (steps[type]||[]).map(s => `
+    <div style="display:flex;gap:14px;align-items:flex-start;padding:14px;background:white;border-radius:12px;border:1.5px solid var(--border);margin-bottom:10px;">
+      <div style="width:36px;height:36px;min-width:36px;background:${s.color};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;color:var(--dark);">${s.n}</div>
+      <div>
+        <div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:0.9rem;color:var(--dark);margin-bottom:4px;">${s.icon} ${s.title}</div>
+        <div style="font-size:0.82rem;color:var(--muted);line-height:1.6;">${s.desc}</div>
+      </div>
+    </div>`).join('');
+  const stepEl = document.getElementById('stepGuide');
+  if (stepEl) stepEl.innerHTML = stepHtml;
+}
+
+function drawOffGrid() {
+  return `<svg viewBox="0 0 820 440" width="820" height="440" xmlns="http://www.w3.org/2000/svg" style="font-family:'Baloo 2',sans-serif;">
+  <defs>
+    <marker id="arrY" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#FFD700"/></marker>
+    <marker id="arrG" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#00CC66"/></marker>
+    <marker id="arrO" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#FF6B35"/></marker>
+    <marker id="arrB" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#BB86FC"/></marker>
+  </defs>
+
+  <!-- SOLAR PANELS -->
+  <rect x="20" y="60" width="130" height="100" rx="8" fill="#1a237e" stroke="#FFD700" stroke-width="2.5"/>
+  <text x="85" y="84" text-anchor="middle" fill="#FFD700" font-size="11" font-weight="800">SOLAR PANELS</text>
+  <line x1="38" y1="94" x2="112" y2="94" stroke="#4FC3F7" stroke-width="1" opacity="0.6"/>
+  <line x1="38" y1="104" x2="112" y2="104" stroke="#4FC3F7" stroke-width="1" opacity="0.6"/>
+  <line x1="38" y1="114" x2="112" y2="114" stroke="#4FC3F7" stroke-width="1" opacity="0.6"/>
+  <line x1="55" y1="91" x2="55" y2="125" stroke="#4FC3F7" stroke-width="1" opacity="0.6"/>
+  <line x1="75" y1="91" x2="75" y2="125" stroke="#4FC3F7" stroke-width="1" opacity="0.6"/>
+  <line x1="95" y1="91" x2="95" y2="125" stroke="#4FC3F7" stroke-width="1" opacity="0.6"/>
+  <text x="85" y="144" text-anchor="middle" fill="#90CAF9" font-size="9">e.g. 2x 200W | 6mm² PV wire</text>
+  <text x="85" y="155" text-anchor="middle" fill="#90CAF9" font-size="9">MC4 Connectors</text>
+
+  <!-- STEP 1 BADGE -->
+  <circle cx="23" cy="63" r="10" fill="#FFD700"/>
+  <text x="23" y="67" text-anchor="middle" fill="#000" font-size="10" font-weight="800">1</text>
+
+  <!-- DC FUSE -->
+  <rect x="210" y="80" width="80" height="50" rx="6" fill="#1B2A1B" stroke="#FFD700" stroke-width="1.5" stroke-dasharray="4,2"/>
+  <text x="250" y="101" text-anchor="middle" fill="#FFD700" font-size="10" font-weight="700">DC FUSE</text>
+  <text x="250" y="115" text-anchor="middle" fill="#AAA" font-size="8">25–30A MCB</text>
+  <text x="250" y="126" text-anchor="middle" fill="#AAA" font-size="8">MC4 protected</text>
+  <circle cx="213" cy="83" r="9" fill="#FFD700"/>
+  <text x="213" y="87" text-anchor="middle" fill="#000" font-size="9" font-weight="800">2</text>
+
+  <!-- MPPT CONTROLLER -->
+  <rect x="355" y="55" width="120" height="110" rx="8" fill="#1A2E1A" stroke="#00CC66" stroke-width="2.5"/>
+  <text x="415" y="80" text-anchor="middle" fill="#00CC66" font-size="12" font-weight="800">MPPT</text>
+  <text x="415" y="96" text-anchor="middle" fill="#00CC66" font-size="10" font-weight="700">CHARGE CTRL</text>
+  <rect x="368" y="104" width="94" height="18" rx="4" fill="#0D1F0D"/>
+  <text x="415" y="117" text-anchor="middle" fill="#4CAF50" font-size="9">20A–60A</text>
+  <text x="415" y="138" text-anchor="middle" fill="#81C784" font-size="9">e.g. SRNE / PowMr</text>
+  <text x="415" y="152" text-anchor="middle" fill="#81C784" font-size="9">PV In | Battery Out</text>
+  <circle cx="358" cy="58" r="9" fill="#00CC66"/>
+  <text x="358" y="62" text-anchor="middle" fill="#000" font-size="9" font-weight="800">3</text>
+
+  <!-- BATTERY BANK -->
+  <rect x="355" y="250" width="120" height="110" rx="8" fill="#0D1F2D" stroke="#00CC66" stroke-width="2.5"/>
+  <text x="415" y="278" text-anchor="middle" fill="#00CC66" font-size="12" font-weight="800">BATTERY</text>
+  <text x="415" y="294" text-anchor="middle" fill="#00CC66" font-size="10" font-weight="700">BANK</text>
+  <rect x="372" y="304" width="86" height="18" rx="4" fill="#0A1520"/>
+  <text x="415" y="317" text-anchor="middle" fill="#4FC3F7" font-size="9">24V LiFePO4</text>
+  <text x="415" y="335" text-anchor="middle" fill="#81C784" font-size="9">e.g. GENTAI / WattCycle</text>
+  <text x="415" y="349" text-anchor="middle" fill="#81C784" font-size="9">100Ah | With BMS</text>
+  <circle cx="358" cy="253" r="9" fill="#00CC66"/>
+  <text x="358" y="257" text-anchor="middle" fill="#000" font-size="9" font-weight="800">4</text>
+
+  <!-- Arrows PANELS → FUSE → MPPT -->
+  <line x1="152" y1="108" x2="208" y2="108" stroke="#FFD700" stroke-width="2.5" marker-end="url(#arrY)"/>
+  <line x1="292" y1="108" x2="353" y2="108" stroke="#FFD700" stroke-width="2.5" marker-end="url(#arrY)"/>
+
+  <!-- Arrow MPPT → BATTERY (charge) -->
+  <line x1="415" y1="167" x2="415" y2="248" stroke="#00CC66" stroke-width="2.5" marker-end="url(#arrG)"/>
+  <text x="430" y="212" fill="#00CC66" font-size="9">Charge ↓</text>
+  <text x="430" y="223" fill="#00CC66" font-size="9">10–16mm²</text>
+
+  <!-- DC-MCCB between battery and inverter -->
+  <rect x="555" y="270" width="75" height="45" rx="6" fill="#1B1B0D" stroke="#FFD700" stroke-width="1.5"/>
+  <text x="592" y="289" text-anchor="middle" fill="#FFD700" font-size="10" font-weight="700">DC-MCCB</text>
+  <text x="592" y="303" text-anchor="middle" fill="#AAA" font-size="8">100–125A</text>
+  <circle cx="558" cy="273" r="9" fill="#FFD700"/>
+  <text x="558" y="277" text-anchor="middle" fill="#000" font-size="9" font-weight="800">5</text>
+
+  <!-- Arrow Battery → MCCB -->
+  <line x1="477" y1="295" x2="553" y2="293" stroke="#00CC66" stroke-width="2.5" marker-end="url(#arrG)"/>
+  <text x="510" y="288" text-anchor="middle" fill="#00CC66" font-size="8">25–35mm²</text>
+
+  <!-- INVERTER -->
+  <rect x="590" y="55" width="130" height="130" rx="8" fill="#1C1020" stroke="#BB86FC" stroke-width="2.5"/>
+  <text x="655" y="84" text-anchor="middle" fill="#BB86FC" font-size="12" font-weight="800">INVERTER</text>
+  <text x="655" y="100" text-anchor="middle" fill="#BB86FC" font-size="10">(Pure Sine Wave)</text>
+  <rect x="605" y="110" width="100" height="22" rx="4" fill="#110C1A"/>
+  <text x="655" y="125" text-anchor="middle" fill="#CE93D8" font-size="9">e.g. SNAT 1000W</text>
+  <text x="655" y="145" text-anchor="middle" fill="#9C88C0" font-size="9">DC Input: 24V</text>
+  <text x="655" y="159" text-anchor="middle" fill="#9C88C0" font-size="9">AC Output: 220V</text>
+  <text x="655" y="176" text-anchor="middle" fill="#9C88C0" font-size="9">Laging Pure Sine!</text>
+  <circle cx="593" cy="58" r="9" fill="#BB86FC"/>
+  <text x="593" y="62" text-anchor="middle" fill="#000" font-size="9" font-weight="800">6</text>
+
+  <!-- Arrow MCCB → Inverter -->
+  <line x1="630" y1="268" x2="655" y2="187" stroke="#00CC66" stroke-width="2.5" marker-end="url(#arrG)"/>
+
+  <!-- AC PANEL -->
+  <rect x="740" y="160" width="70" height="50" rx="6" fill="#1A1010" stroke="#FF6B35" stroke-width="2"/>
+  <text x="775" y="181" text-anchor="middle" fill="#FF6B35" font-size="9" font-weight="700">AC PANEL</text>
+  <text x="775" y="194" text-anchor="middle" fill="#AAA" font-size="8">MCB + Box</text>
+  <text x="775" y="206" text-anchor="middle" fill="#AAA" font-size="8">6–20A AC</text>
+
+  <!-- HOME LOAD -->
+  <rect x="740" y="65" width="70" height="75" rx="8" fill="#1A1000" stroke="#FF6B35" stroke-width="2.5"/>
+  <text x="775" y="100" text-anchor="middle" fill="#FF6B35" font-size="22">🏠</text>
+  <text x="775" y="122" text-anchor="middle" fill="#FF6B35" font-size="10" font-weight="800">LOADS</text>
+  <text x="775" y="135" text-anchor="middle" fill="#FFAB91" font-size="8">220V AC</text>
+  <circle cx="743" cy="68" r="9" fill="#FF6B35"/>
+  <text x="743" y="72" text-anchor="middle" fill="#000" font-size="9" font-weight="800">7</text>
+
+  <!-- Arrows Inverter → AC Panel → Load -->
+  <line x1="722" y1="130" x2="740" y2="175" stroke="#FF6B35" stroke-width="2.5" marker-end="url(#arrO)"/>
+  <line x1="775" y1="160" x2="775" y2="142" stroke="#FF6B35" stroke-width="2.5" marker-end="url(#arrO)"/>
+
+  <!-- GROUNDING LINE -->
+  <line x1="85" y1="162" x2="85" y2="415" stroke="#64B5F6" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
+  <line x1="415" y1="362" x2="415" y2="415" stroke="#64B5F6" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
+  <line x1="655" y1="187" x2="655" y2="415" stroke="#64B5F6" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
+  <line x1="85" y1="415" x2="655" y2="415" stroke="#64B5F6" stroke-width="2" opacity="0.6"/>
+  <text x="400" y="432" text-anchor="middle" fill="#64B5F6" font-size="9">⏚ COMMON GROUND — I-ground ang lahat ng components (PEC Required)</text>
+  <circle cx="555" cy="415" r="5" fill="#64B5F6"/>
+  <text x="555" y="430" text-anchor="middle" fill="#64B5F6" font-size="8">GND Bar</text>
+</svg>`;
+}
+
+function drawOnGrid() {
+  return `<svg viewBox="0 0 820 380" width="820" height="380" xmlns="http://www.w3.org/2000/svg" style="font-family:'Baloo 2',sans-serif;">
+  <defs>
+    <marker id="arrY2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#FFD700"/></marker>
+    <marker id="arrO2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#FF6B35"/></marker>
+    <marker id="arrG2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#00CC66"/></marker>
+  </defs>
+
+  <!-- SOLAR PANELS -->
+  <rect x="20" y="80" width="130" height="90" rx="8" fill="#1a237e" stroke="#FFD700" stroke-width="2.5"/>
+  <text x="85" y="103" text-anchor="middle" fill="#FFD700" font-size="11" font-weight="800">SOLAR PANELS</text>
+  <line x1="38" y1="114" x2="112" y2="114" stroke="#4FC3F7" stroke-width="1" opacity="0.6"/>
+  <line x1="38" y1="124" x2="112" y2="124" stroke="#4FC3F7" stroke-width="1" opacity="0.6"/>
+  <line x1="55" y1="111" x2="55" y2="140" stroke="#4FC3F7" stroke-width="1" opacity="0.6"/>
+  <line x1="80" y1="111" x2="80" y2="140" stroke="#4FC3F7" stroke-width="1" opacity="0.6"/>
+  <line x1="105" y1="111" x2="105" y2="140" stroke="#4FC3F7" stroke-width="1" opacity="0.6"/>
+  <text x="85" y="160" text-anchor="middle" fill="#90CAF9" font-size="9">Mono / Half-Cut | 6mm² PV wire</text>
+  <circle cx="23" cy="83" r="9" fill="#FFD700"/>
+  <text x="23" y="87" text-anchor="middle" fill="#000" font-size="9" font-weight="800">1</text>
+
+  <!-- DC COMBINER + FUSE -->
+  <rect x="210" y="95" width="85" height="55" rx="6" fill="#1B2A1B" stroke="#FFD700" stroke-width="1.5" stroke-dasharray="4,2"/>
+  <text x="252" y="117" text-anchor="middle" fill="#FFD700" font-size="10" font-weight="700">DC FUSE</text>
+  <text x="252" y="131" text-anchor="middle" fill="#AAA" font-size="8">+ Surge Arrester</text>
+  <text x="252" y="143" text-anchor="middle" fill="#AAA" font-size="8">6mm² PV Wire</text>
+  <circle cx="213" cy="98" r="9" fill="#FFD700"/>
+  <text x="213" y="102" text-anchor="middle" fill="#000" font-size="9" font-weight="800">2</text>
+
+  <!-- GRID-TIE INVERTER -->
+  <rect x="355" y="55" width="145" height="150" rx="10" fill="#1C1020" stroke="#BB86FC" stroke-width="2.5"/>
+  <text x="427" y="87" text-anchor="middle" fill="#BB86FC" font-size="13" font-weight="800">GRID-TIE</text>
+  <text x="427" y="105" text-anchor="middle" fill="#BB86FC" font-size="13" font-weight="800">INVERTER</text>
+  <rect x="370" y="115" width="115" height="22" rx="4" fill="#110C1A"/>
+  <text x="427" y="130" text-anchor="middle" fill="#CE93D8" font-size="9">Built-in MPPT ✓</text>
+  <text x="427" y="150" text-anchor="middle" fill="#9C88C0" font-size="9">Anti-Islanding ✓</text>
+  <text x="427" y="168" text-anchor="middle" fill="#9C88C0" font-size="9">Auto-shutdown kapag</text>
+  <text x="427" y="182" text-anchor="middle" fill="#9C88C0" font-size="9">nawala ang grid!</text>
+  <text x="427" y="197" text-anchor="middle" fill="#CE93D8" font-size="8">e.g. Sungrow / Growatt</text>
+  <circle cx="358" cy="58" r="9" fill="#BB86FC"/>
+  <text x="358" y="62" text-anchor="middle" fill="#000" font-size="9" font-weight="800">3</text>
+
+  <!-- Arrows Panels → Fuse → Inverter -->
+  <line x1="152" y1="122" x2="208" y2="122" stroke="#FFD700" stroke-width="2.5" marker-end="url(#arrY2)"/>
+  <line x1="297" y1="122" x2="353" y2="122" stroke="#FFD700" stroke-width="2.5" marker-end="url(#arrY2)"/>
+
+  <!-- AC PANEL BOARD -->
+  <rect x="567" y="80" width="85" height="80" rx="8" fill="#1A1010" stroke="#FF6B35" stroke-width="2"/>
+  <text x="609" y="107" text-anchor="middle" fill="#FF6B35" font-size="10" font-weight="700">AC MAIN</text>
+  <text x="609" y="121" text-anchor="middle" fill="#FF6B35" font-size="10" font-weight="700">PANEL</text>
+  <text x="609" y="138" text-anchor="middle" fill="#AAA" font-size="8">MCB + Bus Bar</text>
+  <text x="609" y="151" text-anchor="middle" fill="#AAA" font-size="8">Solar + Grid</text>
+  <circle cx="570" cy="83" r="9" fill="#FF6B35"/>
+  <text x="570" y="87" text-anchor="middle" fill="#000" font-size="9" font-weight="800">4</text>
+
+  <!-- NET METER -->
+  <rect x="567" y="210" width="85" height="65" rx="8" fill="#0D200D" stroke="#00CC66" stroke-width="2"/>
+  <text x="609" y="235" text-anchor="middle" fill="#00CC66" font-size="10" font-weight="700">NET METER</text>
+  <text x="609" y="250" text-anchor="middle" fill="#AAA" font-size="8">Bidirectional</text>
+  <text x="609" y="263" text-anchor="middle" fill="#AAA" font-size="8">Utility-installed</text>
+  <text x="609" y="267" text-anchor="middle" fill="#AAA" font-size="7">Apply muna bago gamitin!</text>
+  <circle cx="570" cy="213" r="9" fill="#00CC66"/>
+  <text x="570" y="217" text-anchor="middle" fill="#000" font-size="9" font-weight="800">5</text>
+
+  <!-- GRID -->
+  <rect x="700" y="140" width="100" height="100" rx="10" fill="#0A1A0A" stroke="#00CC66" stroke-width="2.5"/>
+  <text x="750" y="175" text-anchor="middle" fill="#00CC66" font-size="22">🔌</text>
+  <text x="750" y="196" text-anchor="middle" fill="#00CC66" font-size="11" font-weight="800">GRID</text>
+  <text x="750" y="210" text-anchor="middle" fill="#81C784" font-size="8">Meralco/NORECO</text>
+  <text x="750" y="222" text-anchor="middle" fill="#81C784" font-size="8">etc.</text>
+  <circle cx="703" cy="143" r="9" fill="#00CC66"/>
+  <text x="703" y="147" text-anchor="middle" fill="#000" font-size="9" font-weight="800">6</text>
+
+  <!-- HOME -->
+  <rect x="700" y="55" width="100" height="75" rx="8" fill="#1A1000" stroke="#FF6B35" stroke-width="2.5"/>
+  <text x="750" y="85" text-anchor="middle" fill="#FF6B35" font-size="22">🏠</text>
+  <text x="750" y="108" text-anchor="middle" fill="#FF6B35" font-size="10" font-weight="800">LOADS</text>
+  <text x="750" y="122" text-anchor="middle" fill="#FFAB91" font-size="8">220V Appliances</text>
+
+  <!-- Arrows -->
+  <line x1="502" y1="130" x2="565" y2="120" stroke="#FF6B35" stroke-width="2.5" marker-end="url(#arrO2)"/>
+  <line x1="652" y1="120" x2="698" y2="95" stroke="#FF6B35" stroke-width="2.5" marker-end="url(#arrO2)"/>
+  <line x1="652" y1="160" x2="698" y2="182" stroke="#00CC66" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrG2)"/>
+  <line x1="652" y1="242" x2="698" y2="200" stroke="#00CC66" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrG2)"/>
+
+  <!-- Export/Import labels -->
+  <text x="672" y="168" text-anchor="middle" fill="#00CC66" font-size="8">Export ↑</text>
+  <text x="672" y="240" text-anchor="middle" fill="#00CC66" font-size="8">Import ↓</text>
+
+  <!-- Ground -->
+  <text x="410" y="365" text-anchor="middle" fill="#64B5F6" font-size="9">⏚ I-ground ang lahat ng components — Kailangan para sa permit (PEC)</text>
+  <text x="410" y="350" text-anchor="middle" fill="#FF6B35" font-size="9">⚠️ Anti-islanding inverter REQUIRED — auto mag-shut off kapag nawala ang grid</text>
+</svg>`;
+}
+
+function drawHybrid() {
+  return `<svg viewBox="0 0 820 460" width="820" height="460" xmlns="http://www.w3.org/2000/svg" style="font-family:'Baloo 2',sans-serif;">
+  <defs>
+    <marker id="arrYH" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#FFD700"/></marker>
+    <marker id="arrOH" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#FF6B35"/></marker>
+    <marker id="arrGH" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#00CC66"/></marker>
+  </defs>
+
+  <!-- SOLAR PANELS -->
+  <rect x="15" y="65" width="130" height="105" rx="8" fill="#1a237e" stroke="#FFD700" stroke-width="2.5"/>
+  <text x="80" y="88" text-anchor="middle" fill="#FFD700" font-size="11" font-weight="800">SOLAR PANELS</text>
+  <text x="80" y="102" text-anchor="middle" fill="#FFD700" font-size="9">e.g. 2x 200W</text>
+  <line x1="33" y1="114" x2="107" y2="114" stroke="#4FC3F7" stroke-width="1" opacity="0.6"/>
+  <line x1="33" y1="124" x2="107" y2="124" stroke="#4FC3F7" stroke-width="1" opacity="0.6"/>
+  <line x1="50" y1="111" x2="50" y2="142" stroke="#4FC3F7" stroke-width="1" opacity="0.6"/>
+  <line x1="72" y1="111" x2="72" y2="142" stroke="#4FC3F7" stroke-width="1" opacity="0.6"/>
+  <line x1="94" y1="111" x2="94" y2="142" stroke="#4FC3F7" stroke-width="1" opacity="0.6"/>
+  <text x="80" y="158" text-anchor="middle" fill="#90CAF9" font-size="9">6mm² PV wire | MC4</text>
+  <circle cx="18" cy="68" r="9" fill="#FFD700"/>
+  <text x="18" y="72" text-anchor="middle" fill="#000" font-size="9" font-weight="800">1</text>
+
+  <!-- DC FUSE -->
+  <rect x="205" y="85" width="85" height="55" rx="6" fill="#1B2A1B" stroke="#FFD700" stroke-width="1.5" stroke-dasharray="4,2"/>
+  <text x="247" y="107" text-anchor="middle" fill="#FFD700" font-size="9" font-weight="700">DC FUSE</text>
+  <text x="247" y="120" text-anchor="middle" fill="#AAA" font-size="8">MC4 + 25–30A</text>
+  <text x="247" y="132" text-anchor="middle" fill="#AAA" font-size="8">6mm² PV wire</text>
+  <circle cx="208" cy="88" r="9" fill="#FFD700"/>
+  <text x="208" y="92" text-anchor="middle" fill="#000" font-size="9" font-weight="800">2</text>
+
+  <!-- HYBRID INVERTER CENTER -->
+  <rect x="340" y="45" width="165" height="220" rx="12" fill="#180D22" stroke="#BB86FC" stroke-width="2.5"/>
+  <text x="422" y="78" text-anchor="middle" fill="#BB86FC" font-size="14" font-weight="800">HYBRID</text>
+  <text x="422" y="96" text-anchor="middle" fill="#BB86FC" font-size="14" font-weight="800">INVERTER</text>
+  <rect x="355" y="108" width="135" height="22" rx="4" fill="#0E0818"/>
+  <text x="422" y="123" text-anchor="middle" fill="#CE93D8" font-size="9">Built-in MPPT ✓</text>
+  <text x="422" y="142" text-anchor="middle" fill="#9C88C0" font-size="9">Battery Management ✓</text>
+  <text x="422" y="159" text-anchor="middle" fill="#9C88C0" font-size="9">Anti-Islanding ✓</text>
+  <text x="422" y="176" text-anchor="middle" fill="#9C88C0" font-size="9">Grid Backup ✓</text>
+  <text x="422" y="196" text-anchor="middle" fill="#CE93D8" font-size="9">e.g. Growatt / Deye</text>
+  <text x="422" y="213" text-anchor="middle" fill="#CE93D8" font-size="9">Sungrow / Huawei</text>
+  <text x="422" y="250" text-anchor="middle" fill="#9C88C0" font-size="9">ALL-IN-ONE SOLUTION</text>
+  <circle cx="343" cy="48" r="9" fill="#BB86FC"/>
+  <text x="343" y="52" text-anchor="middle" fill="#000" font-size="9" font-weight="800">3</text>
+
+  <!-- BATTERY BANK -->
+  <rect x="340" y="320" width="165" height="110" rx="10" fill="#0D1F2D" stroke="#00CC66" stroke-width="2.5"/>
+  <text x="422" y="350" text-anchor="middle" fill="#00CC66" font-size="12" font-weight="800">BATTERY BANK</text>
+  <rect x="358" y="360" width="129" height="20" rx="4" fill="#0A1520"/>
+  <text x="422" y="374" text-anchor="middle" fill="#4FC3F7" font-size="9">24V LiFePO4</text>
+  <text x="422" y="392" text-anchor="middle" fill="#81C784" font-size="9">e.g. GENTAI / WattCycle</text>
+  <text x="422" y="407" text-anchor="middle" fill="#81C784" font-size="9">100Ah+ | With BMS</text>
+  <text x="422" y="422" text-anchor="middle" fill="#81C784" font-size="9">25–35mm² battery wire</text>
+  <circle cx="343" cy="323" r="9" fill="#00CC66"/>
+  <text x="343" y="327" text-anchor="middle" fill="#000" font-size="9" font-weight="800">4</text>
+
+  <!-- Arrow PV → Hybrid -->
+  <line x1="148" y1="115" x2="203" y2="115" stroke="#FFD700" stroke-width="2.5" marker-end="url(#arrYH)"/>
+  <line x1="292" y1="115" x2="338" y2="115" stroke="#FFD700" stroke-width="2.5" marker-end="url(#arrYH)"/>
+  <text x="314" y="107" text-anchor="middle" fill="#FFD700" font-size="8">PV In</text>
+
+  <!-- Arrow Battery ↔ Hybrid -->
+  <line x1="395" y1="267" x2="395" y2="318" stroke="#00CC66" stroke-width="2.5" marker-end="url(#arrGH)"/>
+  <line x1="450" y1="318" x2="450" y2="267" stroke="#00CC66" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrGH)"/>
+  <text x="465" y="297" fill="#00CC66" font-size="8">Charge ↓</text>
+  <text x="465" y="309" fill="#00CC66" font-size="8">Discharge ↑</text>
+
+  <!-- GRID -->
+  <rect x="685" y="55" width="115" height="105" rx="10" fill="#0A1A0A" stroke="#00CC66" stroke-width="2"/>
+  <text x="742" y="92" text-anchor="middle" fill="#00CC66" font-size="22">🔌</text>
+  <text x="742" y="112" text-anchor="middle" fill="#00CC66" font-size="11" font-weight="800">GRID</text>
+  <text x="742" y="127" text-anchor="middle" fill="#81C784" font-size="8">Meralco/NORECO</text>
+  <text x="742" y="140" text-anchor="middle" fill="#81C784" font-size="8">CENECO/etc.</text>
+  <text x="742" y="152" text-anchor="middle" fill="#81C784" font-size="8">Net Metering ↔</text>
+  <circle cx="688" cy="58" r="9" fill="#00CC66"/>
+  <text x="688" y="62" text-anchor="middle" fill="#000" font-size="9" font-weight="800">6</text>
+
+  <!-- HOME LOADS -->
+  <rect x="685" y="215" width="115" height="100" rx="10" fill="#1A1000" stroke="#FF6B35" stroke-width="2.5"/>
+  <text x="742" y="248" text-anchor="middle" fill="#FF6B35" font-size="24">🏠</text>
+  <text x="742" y="272" text-anchor="middle" fill="#FF6B35" font-size="11" font-weight="800">HOME LOADS</text>
+  <text x="742" y="289" text-anchor="middle" fill="#FFAB91" font-size="8">220V Appliances</text>
+  <text x="742" y="305" text-anchor="middle" fill="#FFAB91" font-size="8">May backup kapag brownout!</text>
+  <circle cx="688" cy="218" r="9" fill="#FF6B35"/>
+  <text x="688" y="222" text-anchor="middle" fill="#000" font-size="9" font-weight="800">5</text>
+
+  <!-- Arrows Hybrid ↔ Grid -->
+  <line x1="507" y1="130" x2="683" y2="130" stroke="#00CC66" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrGH)"/>
+  <line x1="683" y1="148" x2="507" y2="148" stroke="#FF6B35" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrOH)"/>
+  <text x="593" y="122" text-anchor="middle" fill="#00CC66" font-size="8">Export sobra ↑</text>
+  <text x="593" y="163" text-anchor="middle" fill="#FF6B35" font-size="8">Import backup ↓</text>
+
+  <!-- Arrow Hybrid → Loads -->
+  <line x1="507" y1="195" x2="683" y2="268" stroke="#FF6B35" stroke-width="2.5" marker-end="url(#arrOH)"/>
+  <text x="600" y="225" text-anchor="middle" fill="#FF6B35" font-size="9">AC 220V → Loads</text>
+
+  <!-- Ground -->
+  <text x="422" y="448" text-anchor="middle" fill="#64B5F6" font-size="9">⏚ I-ground ang lahat ng components — Panels, Inverter, Battery, Panel Box (PEC Required)</text>
+</svg>`;
+}
+
 // ============================================================
 // INIT
 // ============================================================
@@ -2298,6 +2898,8 @@ function init() {
   loadProfile('home');
   renderChecklist();
   updatePremiumUI();
+  // Init diagram
+  setTimeout(() => showDiagram('offgrid'), 100);
 }
 init();
 </script>
