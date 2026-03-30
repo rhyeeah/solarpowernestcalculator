@@ -768,6 +768,62 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 .empty-state p { font-size:0.87rem; }
 </style>
 
+<!-- EmailJS — instant email alerts for leads and payments -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  // ─────────────────────────────────────────────────────────────
+  // 📧 EMAILJS SETUP (free at emailjs.com — 200 emails/month)
+  // Steps:
+  // 1. Sign up at https://www.emailjs.com
+  // 2. Add Gmail service → copy Service ID
+  // 3. Create 2 templates (lead + payment) → copy Template IDs
+  // 4. Account → API Keys → copy Public Key
+  // ─────────────────────────────────────────────────────────────
+  const EMAILJS_PUBLIC_KEY       = "s27eeqI3Ubu3tYUlf";
+  const EMAILJS_SERVICE_ID       = "service_6zq5jop";
+  const EMAILJS_TEMPLATE_LEAD    = "template_mfu6fbc";
+  const EMAILJS_TEMPLATE_PAYMENT = "template_sm89syx";
+
+  const emailjsReady = EMAILJS_PUBLIC_KEY !== "YOUR_EMAILJS_PUBLIC_KEY";
+  if (emailjsReady) emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+
+  window.sendLeadEmailAlert = async function(lead) {
+    if (!emailjsReady) return;
+    try {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_LEAD, {
+        to_email:      "rheabaquil@gmail.com",
+        lead_name:     lead.name     || "—",
+        lead_phone:    lead.phone    || "—",
+        lead_location: lead.location || "—",
+        lead_system:   lead.systemType || "—",
+        lead_budget:   lead.budget   || "—",
+        lead_load:     lead.calculatedLoad   || "—",
+        lead_panels:   lead.calculatedPanels || "—",
+        lead_message:  lead.message  || "—",
+        lead_email:    lead.email    || "—",
+        timestamp:     lead.timestamp || new Date().toLocaleString('en-PH'),
+      });
+      console.log("✅ Lead email alert sent to rheabaquil@gmail.com");
+    } catch(e) { console.warn("EmailJS lead alert failed:", e.text || e); }
+  };
+
+  window.sendPaymentEmailAlert = async function(payment) {
+    if (!emailjsReady) return;
+    try {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_PAYMENT, {
+        to_email:       "rheabaquil@gmail.com",
+        payment_name:   payment.name    || "—",
+        payment_ref:    payment.gcashRef || "—",
+        payment_plan:   payment.plan    || "—",
+        payment_amount: "₱" + (payment.amount || "—"),
+        payment_method: payment.method  || "GCash",
+        timestamp:      new Date().toLocaleString('en-PH'),
+      });
+      console.log("✅ Payment email alert sent to rheabaquil@gmail.com");
+    } catch(e) { console.warn("EmailJS payment alert failed:", e.text || e); }
+  };
+</script>
+
 </head>
 <body>
 
@@ -834,13 +890,21 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
           <div class="gcash-amount" id="payAmount">₱99</div>
           <div class="gcash-steps">1. Buksan ang GCash o Maya app<br>2. Send Money → i-type ang number sa itaas<br>3. Amount: <strong id="payAmountStep">₱99</strong><br>4. I-screenshot ang reference number<br>5. I-fill ang form sa ibaba ↓</div>
         </div>
-        <div class="modal-field"><label>Inyong Pangalan *</label><input type="text" id="payName" placeholder="e.g. Juan dela Cruz"></div>
-        <div class="modal-field"><label>Contact Number *</label><input type="tel" id="payPhone" placeholder="09XX XXX XXXX"></div>
-        <div class="modal-field"><label>GCash / Maya Reference Number *</label><input type="text" id="payRef" placeholder="e.g. GC-1234567890" style="font-family:monospace;letter-spacing:1px;"></div>
-        <div class="modal-field"><label>Payment Method</label><select id="payMethod"><option value="GCash">GCash</option><option value="Maya">Maya</option></select></div>
+        <div class="modal-field">
+          <label>GCash / Maya Account Name *</label>
+          <input type="text" id="payName" placeholder="e.g. Juan dela Cruz (name na nakita sa GCash)">
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">Ang pangalan ng account na ginamit mo sa pagpadala</div>
+        </div>
+        <div class="modal-field">
+          <label>Reference Number *</label>
+          <input type="text" id="payRef" placeholder="e.g. 1234567890" style="font-family:monospace;letter-spacing:1px;">
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">Makikita sa GCash/Maya — Send Money → Receipt</div>
+        </div>
+        <input type="hidden" id="payPhone" value="">
+        <input type="hidden" id="payMethod" value="GCash">
         <div id="payError" style="color:var(--red);font-size:0.8rem;margin-bottom:9px;display:none;background:#FFE5E5;padding:9px;border-radius:8px;"></div>
         <button class="btn btn-sun btn-block" style="font-size:0.97rem;padding:14px;" onclick="submitPayment()">💸 Isumite ang Payment</button>
-        <p style="font-size:0.72rem;color:var(--muted);text-align:center;margin-top:9px;">Ia-activate ang access sa loob ng <strong>24 oras</strong>. Para sa tulong: <strong>facebook.com/negrosorientalsolarenergyshop</strong></p>
+        <p style="font-size:0.72rem;color:var(--muted);text-align:center;margin-top:9px;">Ia-activate ang access sa loob ng <strong>24 oras</strong> pagkatapos ma-verify. Para sa tulong: <strong>facebook.com/negrosorientalsolarenergyshop</strong></p>
       </div>
       <div class="pay-success-view" id="paySuccessView">
         <div class="icon">🎉</div>
@@ -2344,12 +2408,14 @@ async function submitPayment() {
   const ref   = document.getElementById('payRef').value.trim();
   const method= document.getElementById('payMethod').value;
   const errEl = document.getElementById('payError');
-  if (!name || !phone || !ref) { errEl.textContent='⚠️ Pakisulat ang pangalan, number, at reference number.'; errEl.style.display='block'; return; }
+  if (!name || !ref) { errEl.textContent='⚠️ Pakisulat ang iyong GCash account name at reference number.'; errEl.style.display='block'; return; }
   errEl.style.display = 'none';
   const amt = selectedPlan==='full' ? 99 : 75;
-  if (typeof saveLeadToFirestore === 'function') {
-    await window.submitPaymentRequest({name, phone, gcashRef:ref, method, plan:selectedPlan, amount:amt});
+  const paymentData = {name, phone, gcashRef:ref, method, plan:selectedPlan, amount:amt};
+  if (typeof window.submitPaymentRequest === 'function') {
+    await window.submitPaymentRequest(paymentData);
   }
+  if (typeof sendPaymentEmailAlert === 'function') sendPaymentEmailAlert(paymentData);
   document.getElementById('payFormView').style.display = 'none';
   document.getElementById('paySuccessView').style.display = 'block';
   document.getElementById('paySuccessPlan').textContent = selectedPlan==='full' ? 'Full Access (₱99)' : 'Basic Access (₱75)';
@@ -2389,6 +2455,7 @@ async function submitLead() {
     timestamp: new Date().toLocaleString('en-PH', {timeZone:'Asia/Manila'})
   };
   if (typeof saveLeadToFirestore === 'function') saveLeadToFirestore(lead);
+  if (typeof sendLeadEmailAlert === 'function') sendLeadEmailAlert(lead);
   try { const ex=JSON.parse(localStorage.getItem('spn_leads')||'[]'); ex.push(lead); localStorage.setItem('spn_leads',JSON.stringify(ex)); } catch(e){}
   document.getElementById('modalForm').style.display = 'none';
   document.getElementById('modalSuccess').style.display = 'block';
