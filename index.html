@@ -1036,67 +1036,35 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
     </div>
   </div>
 
-  <button class="btn btn-sun btn-block" style="font-size:1rem;padding:15px;" onclick="calculate();scrollToEstimate()">
+  <button class="btn btn-sun btn-block" style="font-size:1rem;padding:15px;" onclick="calculate();switchTab('results',document.querySelectorAll('.tab-btn')[1])">
     ☀️ KALKULAHIN ANG SISTEMA KO →
   </button>
 
-  <!-- FREE ESTIMATE PREVIEW — visible to everyone -->
-  <div id="freeEstimate" style="display:none;margin-top:20px;">
-    <div style="background:linear-gradient(135deg,#1B7A4A,#0096C7);border-radius:16px;padding:20px 22px;color:white;margin-bottom:16px;">
-      <div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.1rem;margin-bottom:4px;">☀️ Ang Rough Estimate ng Sistema Mo</div>
-      <div style="font-size:0.82rem;opacity:0.9;">Based sa iyong mga appliances — libreng preview. I-unlock ang Full Details para sa exact breakdown.</div>
-    </div>
+  <!-- FREE ROUGH ESTIMATE — auto-updates as user types, always visible -->
+  <div id="freeEstimate" style="margin-top:20px;">
+    <div class="card" style="border-left:4px solid var(--sun);">
+      <div class="card-title">💰 Rough Cost Estimate <span style="font-size:0.75rem;font-weight:600;color:var(--muted);font-family:'Nunito',sans-serif;">(auto-calculates habang nag-iinput)</span></div>
+      <div class="card-sub">2026 PH price estimates. Mag-input ng appliances sa itaas para ma-update ito.</div>
 
-    <!-- KEY NUMBERS -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px;">
-      <div style="background:white;border-radius:12px;padding:14px;border:1.5px solid var(--border);text-align:center;">
-        <div id="fe_load" style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.4rem;color:var(--dark);">—</div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">Wh/day (Daily Load)</div>
+      <div id="fe_empty" style="text-align:center;padding:20px;color:var(--muted);font-size:0.85rem;">
+        ☝️ Mag-input muna ng appliances sa itaas para makita ang rough estimate.
       </div>
-      <div style="background:white;border-radius:12px;padding:14px;border:1.5px solid var(--border);text-align:center;">
-        <div id="fe_panel" style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.4rem;color:var(--green);">—</div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">Panel Size (Wp)</div>
-      </div>
-      <div style="background:white;border-radius:12px;padding:14px;border:1.5px solid var(--border);text-align:center;">
-        <div id="fe_batt" style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.4rem;color:var(--sky);">—</div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">Battery (Ah @ 24V)</div>
-      </div>
-      <div style="background:white;border-radius:12px;padding:14px;border:1.5px solid var(--border);text-align:center;">
-        <div id="fe_inv" style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.4rem;color:var(--orange);">—</div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">Inverter Size</div>
-      </div>
-    </div>
 
-    <!-- ROUGH COST TABLE -->
-    <div class="card" style="margin-bottom:14px;">
-      <div class="card-title">💰 Rough Cost Breakdown <span style="font-size:0.75rem;font-weight:600;color:var(--muted);font-family:'Nunito',sans-serif;">(2026 PH prices, DIY estimate)</span></div>
-      <div class="card-sub">Puro materials lang — hindi kasama ang labor. Para sa libre na installation sa Negros Oriental, i-message kami!</div>
-      <table class="summary-table">
-        <thead><tr><th>Component</th><th>Rough Range</th><th>Notes</th></tr></thead>
-        <tbody id="fe_table"></tbody>
-      </table>
-      <div id="fe_total" style="background:linear-gradient(135deg,var(--green),#0096C7);color:white;border-radius:12px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:14px;">
-        <div>
-          <div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:0.95rem;">💰 ESTIMATED TOTAL (Materials Only)</div>
-          <div style="font-size:0.75rem;opacity:0.85;">Hindi kasama ang labor. Libre ang installation sa Negros Oriental! ☀️</div>
+      <div id="fe_content" style="display:none;">
+        <table class="summary-table">
+          <thead><tr><th>Component</th><th>Rough Range</th><th>Notes</th></tr></thead>
+          <tbody id="fe_table"></tbody>
+        </table>
+        <div style="background:linear-gradient(135deg,var(--green),#0096C7);color:white;border-radius:12px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:14px;">
+          <div>
+            <div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:0.95rem;">💰 ESTIMATED TOTAL (Materials Only)</div>
+            <div style="font-size:0.75rem;opacity:0.85;">Hindi kasama ang labor at installation. Rough estimate lang ito — prices may vary.</div>
+          </div>
+          <div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.5rem;" id="fe_totalamt">—</div>
         </div>
-        <div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.6rem;" id="fe_totalamt">—</div>
-      </div>
-    </div>
-
-    <!-- WHAT CAN THIS POWER -->
-    <div class="card" style="margin-bottom:14px;">
-      <div class="card-title">💡 Ano ang Kaya Nitong I-power?</div>
-      <div class="power-grid" id="fe_power"></div>
-    </div>
-
-    <!-- CTA TO UNLOCK FULL -->
-    <div style="background:var(--yellow-light);border:2px solid var(--sun);border-radius:14px;padding:18px;text-align:center;">
-      <div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1rem;color:var(--dark);margin-bottom:6px;">🔓 Gusto mo ng mas detailed na report?</div>
-      <div style="font-size:0.83rem;color:var(--muted);margin-bottom:14px;">I-unlock ang Full Access para sa: Wiring Diagram, Brand Guide + Shopee links, Compliance Checklist, at downloadable PDF Report.</div>
-      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-        <button class="btn btn-sun" onclick="openPayModal()">⭐ I-unlock ang Full Access — ₱99</button>
-        <a href="https://www.facebook.com/negrosorientalsolarenergyshop/" target="_blank" class="btn btn-outline" style="text-decoration:none;">📘 O mag-message para sa libre na quotation</a>
+        <div style="margin-top:12px;padding:10px 14px;background:var(--yellow-light);border-radius:10px;border-left:3px solid var(--sun);font-size:0.78rem;color:#664d00;">
+          ⚠️ <strong>Disclaimer:</strong> Ang mga presyo ay rough estimates lamang para sa 2026. Maaaring mag-iba depende sa brand, supplier, at lokasyon. Para sa exact na quotation — i-message kami sa Facebook!
+        </div>
       </div>
     </div>
   </div>
@@ -1932,38 +1900,34 @@ function setSunHours(h, btn) {
 }
 
 // ============================================================
-// SCROLL TO FREE ESTIMATE
+// FREE ESTIMATE (auto-updates on every calculate())
 // ============================================================
-function scrollToEstimate() {
-  calculate();
-  const el = document.getElementById('freeEstimate');
-  if (el) {
-    el.style.display = 'block';
-    setTimeout(() => el.scrollIntoView({behavior:'smooth', block:'start'}), 100);
-  }
-  updateFreeEstimate();
-}
-
 function updateFreeEstimate() {
   const r = calcResult;
-  if (!r || r.totalWh === 0) return;
+  const emptyEl   = document.getElementById('fe_empty');
+  const contentEl = document.getElementById('fe_content');
 
-  // Key numbers
-  const feLoad  = document.getElementById('fe_load');
-  const fePanel = document.getElementById('fe_panel');
-  const feBatt  = document.getElementById('fe_batt');
-  const feInv   = document.getElementById('fe_inv');
-  if (feLoad)  feLoad.textContent  = r.totalWh.toFixed(0) + ' Wh';
-  if (fePanel) fePanel.textContent = r.panelWp + ' Wp';
-  if (feBatt)  feBatt.textContent  = r.systemType !== 'ongrid' ? r.battAh + ' Ah' : 'N/A';
-  if (feInv)   feInv.textContent   = r.inverterW + 'W';
+  if (!r || r.totalWh === 0) {
+    if (emptyEl)   emptyEl.style.display   = 'block';
+    if (contentEl) contentEl.style.display = 'none';
+    return;
+  }
 
-  // Cost breakdown (same logic as renderCost)
+  if (emptyEl)   emptyEl.style.display   = 'none';
+  if (contentEl) contentEl.style.display = 'block';
+
   const fmt = n => '₱' + Math.round(n).toLocaleString();
+
+  // Cost calculations
   const panelLow  = r.panelCount200 * 3500;
   const panelHigh = r.panelCount200 * 5000;
+
   let battLow = 0, battHigh = 0;
-  if (r.systemType !== 'ongrid') { battLow = r.battCount100Ah * 6000; battHigh = r.battCount100Ah * 12000; }
+  if (r.systemType !== 'ongrid') {
+    battLow  = r.battCount100Ah * 6000;
+    battHigh = r.battCount100Ah * 12000;
+  }
+
   const invKw = r.inverterW / 1000;
   let invLow, invHigh;
   if (invKw <= 1)      { invLow = 5000;  invHigh = 7000; }
@@ -1971,48 +1935,42 @@ function updateFreeEstimate() {
   else if (invKw <= 3) { invLow = 12000; invHigh = 25000; }
   else                  { invLow = 20000; invHigh = 50000; }
   if (r.systemType === 'hybrid') { invLow *= 1.8; invHigh *= 1.8; }
+
   let mpptLow = 0, mpptHigh = 0;
   if (r.systemType === 'offgrid') {
     const m = Math.ceil(r.mpptA / 20);
     mpptLow = m * 3000; mpptHigh = m * 4000;
   }
+
   const bosLow = 2500, bosHigh = 5000;
   const mountLow = 1200, mountHigh = 3000;
+  const instLow = 5000, instHigh = 20000; // rough labor estimate
+
   const totalLow  = panelLow  + battLow  + invLow  + mpptLow  + bosLow  + mountLow;
   const totalHigh = panelHigh + battHigh + invHigh + mpptHigh + bosHigh + mountHigh;
 
+  // Build rows
   const rows = [
-    [`☀️ Solar Panels (${r.panelCount200} x ~200W)`, `${fmt(panelLow)} – ${fmt(panelHigh)}`, '₱3,500–₱5,000 per 200W'],
+    [`☀️ Solar Panels (${r.panelCount200} x ~200W)`, `${fmt(panelLow)} – ${fmt(panelHigh)}`, '₱3,500–₱5,000 per 200W (2026)'],
   ];
-  if (r.systemType !== 'ongrid') rows.push([`🔋 Battery (${r.battCount100Ah} x 100Ah LiFePO4)`, `${fmt(battLow)} – ${fmt(battHigh)}`, '₱6,000–₱12,000 per 100Ah']);
-  rows.push([`⚡ Inverter ${r.inverterW}W (${r.systemType==='hybrid'?'Hybrid':'Pure Sine'})`, `${fmt(invLow)} – ${fmt(invHigh)}`, 'Depende sa brand']);
-  if (r.systemType === 'offgrid') rows.push([`🔆 MPPT Controller (~${r.mpptA}A)`, `${fmt(mpptLow)} – ${fmt(mpptHigh)}`, '₱3,000–₱4,000 per 20A']);
-  rows.push(['🔌 Wires, Breakers, Fuses, Box', `${fmt(bosLow)} – ${fmt(bosHigh)}`, 'DC MCB, MC4, panel box']);
+  if (r.systemType !== 'ongrid') {
+    rows.push([`🔋 Battery (${r.battCount100Ah} x 100Ah LiFePO4)`, `${fmt(battLow)} – ${fmt(battHigh)}`, '₱6,000–₱12,000 per 100Ah']);
+  }
+  rows.push([`⚡ Inverter ${r.inverterW}W (${r.systemType==='hybrid'?'Hybrid':r.systemType==='ongrid'?'Grid-Tie':'Pure Sine'})`, `${fmt(invLow)} – ${fmt(invHigh)}`, 'Depende sa brand at capacity']);
+  if (r.systemType === 'offgrid') {
+    rows.push([`🔆 MPPT Controller (~${r.mpptA}A)`, `${fmt(mpptLow)} – ${fmt(mpptHigh)}`, '₱3,000–₱4,000 per 20A']);
+  }
+  rows.push(['🔌 Wires, Breakers, Fuses, Box', `${fmt(bosLow)} – ${fmt(bosHigh)}`, 'DC MCB, MC4, panel box, etc.']);
   rows.push(['🔩 Mounting Materials', `${fmt(mountLow)} – ${fmt(mountHigh)}`, 'Rails, clamps, sealant']);
-  rows.push(['🛠️ Installation & Labor', '<span style="color:var(--green);font-weight:800;">LIBRE!</span>', 'Para sa Negros Oriental ☀️']);
+  rows.push(['🛠️ Installation & Labor', `${fmt(instLow)} – ${fmt(instHigh)}`, 'Depende sa layo at laki ng sistema']);
 
   const tbody = document.getElementById('fe_table');
-  if (tbody) tbody.innerHTML = rows.map(([c,v,n]) => `<tr><td>${c}</td><td><strong>${v}</strong></td><td style="color:var(--muted);font-size:0.8rem;">${n}</td></tr>`).join('');
+  if (tbody) tbody.innerHTML = rows.map(([c,v,n]) =>
+    `<tr><td>${c}</td><td><strong>${v}</strong></td><td style="color:var(--muted);font-size:0.8rem;">${n}</td></tr>`
+  ).join('');
 
   const totalEl = document.getElementById('fe_totalamt');
   if (totalEl) totalEl.textContent = `${fmt(totalLow)} – ${fmt(totalHigh)}`;
-
-  // What can this power
-  const canPower = {
-    'LED Lights':     r.totalWh >= 40,
-    'Electric Fan':   r.totalWh >= 100,
-    'LED TV':         r.totalWh >= 180,
-    'WiFi Router':    r.totalWh >= 200,
-    'Ref (Small)':    r.totalWh >= 500,
-    'Laptop':         r.totalWh >= 200,
-    'Washing Machine':r.totalWh >= 600,
-    'Aircon 0.5HP':   r.totalWh >= 2000,
-    'Aircon 1HP':     r.totalWh >= 3500,
-  };
-  const powerEl = document.getElementById('fe_power');
-  if (powerEl) powerEl.innerHTML = Object.entries(canPower).map(([name,ok]) =>
-    `<div class="power-item ${ok?'power-yes':'power-no'}">${ok?'✅':'❌'} ${name}</div>`
-  ).join('');
 }
 
 // ============================================================
@@ -2096,6 +2054,7 @@ function calculate() {
 
   renderResults(calcResult);
   renderCost(calcResult);
+  updateFreeEstimate();
 }
 
 // ============================================================
