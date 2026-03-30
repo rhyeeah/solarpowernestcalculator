@@ -32,7 +32,7 @@
   const ADMIN_EMAIL  = "rheabaquil@gmail.com";
   const GCASH_NUMBER = "09756426130";   // GCash number
   const MAYA_NUMBER  = "09756426130";   // Maya number (same or update separately)
-  const PRICE_BASIC  = 75;   // ₱75  — calculator + PDF
+  const PRICE_BASIC  = 50;   // ₱50  — calculator + PDF
   const PRICE_FULL   = 99;   // ₱99  — everything unlocked
   // ──────────────────────────────────────────────────────────
 
@@ -874,7 +874,7 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
         <div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:0.83rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:9px;">Piliin ang Plan</div>
         <div class="plan-grid">
           <div class="plan-card" id="planBasic" onclick="selectPlan('basic')">
-            <div class="plan-price">₱75</div>
+            <div class="plan-price">₱50</div>
             <div class="plan-name">Basic</div>
             <div class="plan-features">✅ Load Calculator<br>✅ System Sizer<br>✅ Cost Estimator<br>✅ PDF Export<br>❌ Wiring Diagram<br>❌ Brand Guide</div>
           </div>
@@ -1139,8 +1139,8 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
   <div class="tab-lock" id="lock-results">
     <div class="lock-icon">🔒</div>
     <div class="lock-title">Premium Feature</div>
-    <div class="lock-sub">I-unlock ang System Sizer para makita ang exact na panel, battery, at inverter size para sa iyo.<br>One-time payment lang — ₱75 o ₱99.</div>
-    <button class="btn btn-sun" onclick="openPayModal()">💸 I-unlock Karon — ₱75 / ₱99</button>
+    <div class="lock-sub">I-unlock ang System Sizer para makita ang exact na panel, battery, at inverter size para sa iyo.<br>One-time payment lang — ₱50 o ₱99.</div>
+    <button class="btn btn-sun" onclick="openPayModal()">💸 I-unlock Karon — ₱50 / ₱99</button>
   </div>
   <div class="section-header"><h2>📊 Ang Solar System Mo</h2><p>Based sa iyong mga appliances at system type.</p></div>
   <div id="resultsContent"><div class="empty-state"><div class="icon">☀️</div><p>Mag-input muna ng appliances sa Calculator tab.<br>Pagkatapos, pindutin ang "Kalkulahin ang Sistema Ko."</p></div></div>
@@ -1152,7 +1152,7 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
     <div class="lock-icon">🔒</div>
     <div class="lock-title">Premium Feature</div>
     <div class="lock-sub">I-unlock ang Cost Estimator — makita ang estimated gastos ng inyong solar system sa Philippine Peso.<br>Updated 2026 prices.</div>
-    <button class="btn btn-sun" onclick="openPayModal()">💸 I-unlock Karon — ₱75 / ₱99</button>
+    <button class="btn btn-sun" onclick="openPayModal()">💸 I-unlock Karon — ₱50 / ₱99</button>
   </div>
   <div class="section-header"><h2>💰 Cost Estimator (Philippine Peso)</h2><p>Rough estimate ng gastos. Hindi kasama ang site-specific na labor o special parts. Updated 2026.</p></div>
   <div id="costContent"><div class="empty-state"><div class="icon">💰</div><p>I-calculate muna ang iyong system sa Calculator tab.</p></div></div>
@@ -2397,7 +2397,7 @@ function selectPlan(plan) {
   updatePayDisplay();
 }
 function updatePayDisplay() {
-  const amt = selectedPlan==='full' ? 99 : 75;
+  const amt = selectedPlan==='full' ? 99 : 50;
   document.getElementById('payNumber').textContent = '09756426130';
   document.getElementById('payAmount').textContent = '₱' + amt;
   document.getElementById('payAmountStep').textContent = '₱' + amt;
@@ -2410,7 +2410,7 @@ async function submitPayment() {
   const errEl = document.getElementById('payError');
   if (!name || !ref) { errEl.textContent='⚠️ Pakisulat ang iyong GCash account name at reference number.'; errEl.style.display='block'; return; }
   errEl.style.display = 'none';
-  const amt = selectedPlan==='full' ? 99 : 75;
+  const amt = selectedPlan==='full' ? 99 : 50;
   const paymentData = {name, phone, gcashRef:ref, method, plan:selectedPlan, amount:amt};
   if (typeof window.submitPaymentRequest === 'function') {
     await window.submitPaymentRequest(paymentData);
@@ -2418,7 +2418,7 @@ async function submitPayment() {
   if (typeof sendPaymentEmailAlert === 'function') sendPaymentEmailAlert(paymentData);
   document.getElementById('payFormView').style.display = 'none';
   document.getElementById('paySuccessView').style.display = 'block';
-  document.getElementById('paySuccessPlan').textContent = selectedPlan==='full' ? 'Full Access (₱99)' : 'Basic Access (₱75)';
+  document.getElementById('paySuccessPlan').textContent = selectedPlan==='full' ? 'Full Access (₱99)' : 'Basic Access (₱50)';
 }
 
 // ============================================================
