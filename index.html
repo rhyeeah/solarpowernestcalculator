@@ -176,6 +176,18 @@
     } catch(e) { alert('Error: ' + e.message); }
   };
 
+  // ── REVOKE ACCESS (admin) ──
+  window.revokeAccess = async (paymentId, uid) => {
+    if (!configured || !db) return;
+    if (!confirm('Are you sure you want to REVOKE access for this user? They will lose access immediately.')) return;
+    try {
+      await updateDoc(doc(db, "payments", paymentId), { status: 'revoked', revokedAt: serverTimestamp() });
+      await setDoc(doc(db, "users", uid), { isPaid: false, plan: null, revokedAt: serverTimestamp() }, { merge: true });
+      loadPayments();
+      alert('✅ Access revoked. User can no longer access premium features.');
+    } catch(e) { alert('Error: ' + e.message); }
+  };
+
   // ── SAVE LEAD TO FIRESTORE ──
   window.saveLeadToFirestore = async (lead) => {
     if (!configured || !db) return;
@@ -2494,6 +2506,9 @@ window.renderPayments = function(payments) {
     const btns = p.status==='pending'
       ? `<button onclick="approvePayment('${p.id}','${p.uid}','${p.plan}')" class="btn btn-green btn-sm" style="padding:4px 9px;font-size:0.73rem;">✅ Approve</button>
          <button onclick="rejectPayment('${p.id}')" class="btn btn-sm" style="padding:4px 9px;font-size:0.73rem;background:#FFE5E5;color:var(--red);">✕ Reject</button>`
+      : p.status==='approved'
+      ? `<span class="tag tag-green">approved</span>
+         <button onclick="revokeAccess('${p.id}','${p.uid}')" class="btn btn-sm" style="padding:4px 9px;font-size:0.72rem;background:#FFE5E5;color:var(--red);margin-left:4px;" title="Remove user access">🚫 Revoke</button>`
       : `<span class="tag ${sc}">${p.status}</span>`;
     return `<tr><td><strong>${p.userName||p.userEmail||'—'}</strong></td><td>${p.phone||'—'}</td><td>₱${p.amount||'—'}<br><small>${p.plan||''}</small></td><td style="font-family:monospace;font-size:0.82rem;">${p.gcashRef||'—'}</td><td>${p.method||'GCash'}</td><td><span class="tag ${sc}">${p.status}</span></td><td style="color:var(--muted);font-size:0.76rem;">${dt}</td><td style="display:flex;gap:5px;flex-wrap:wrap;">${btns}</td></tr>`;
   }).join('');
