@@ -30,8 +30,8 @@
 
   // ─── CONFIG ───────────────────────────────────────────────
   const ADMIN_EMAIL  = "rheabaquil@gmail.com";
-  const GCASH_NUMBER = "09756426130";   // GCash number
-  const MAYA_NUMBER  = "09756426130";   // Maya number (same or update separately)
+  const GCASH_NUMBER = "09682741053";   // GCash number
+  const MAYA_NUMBER  = "09682741053";   // Maya number (same or update separately)
   const PRICE_BASIC  = 50;   // ₱50  — calculator + PDF
   const PRICE_FULL   = 99;   // ₱99  — everything unlocked
   // ──────────────────────────────────────────────────────────
@@ -886,7 +886,7 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
         </div>
         <div class="gcash-box">
           <div class="method-row"><div class="gcash-badge">💙 GCash</div><div class="maya-badge">💚 Maya</div></div>
-          <div class="gcash-number" id="payNumber">09756426130</div>
+          <div class="gcash-number" id="payNumber">09682741053</div>
           <div class="gcash-amount" id="payAmount">₱99</div>
           <div class="gcash-steps">1. Buksan ang GCash o Maya app<br>2. Send Money → i-type ang number sa itaas<br>3. Amount: <strong id="payAmountStep">₱99</strong><br>4. I-screenshot ang reference number<br>5. I-fill ang form sa ibaba ↓</div>
         </div>
@@ -2398,7 +2398,7 @@ function selectPlan(plan) {
 }
 function updatePayDisplay() {
   const amt = selectedPlan==='full' ? 99 : 50;
-  document.getElementById('payNumber').textContent = '09756426130';
+  document.getElementById('payNumber').textContent = '09682741053';
   document.getElementById('payAmount').textContent = '₱' + amt;
   document.getElementById('payAmountStep').textContent = '₱' + amt;
 }
