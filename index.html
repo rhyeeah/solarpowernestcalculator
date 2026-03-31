@@ -297,6 +297,9 @@
       const actionBtns = p.status === 'pending'
         ? `<button onclick="approvePayment('${p.id}','${p.uid}','${p.plan}')" class="btn btn-green btn-sm" style="padding:5px 10px;font-size:0.75rem;">✅ Approve</button>
            <button onclick="rejectPayment('${p.id}')" class="btn btn-sm" style="padding:5px 10px;font-size:0.75rem;background:#FFE5E5;color:var(--red);">✕ Reject</button>`
+        : p.status === 'approved'
+        ? `<span class="tag tag-green">approved</span>
+           <button onclick="revokeAccess('${p.id}','${p.uid}')" class="btn btn-sm" style="padding:4px 9px;font-size:0.72rem;background:#FFE5E5;color:var(--red);margin-left:4px;" title="Remove user access">🚫 Revoke</button>`
         : `<span class="tag ${statusColor}">${p.status}</span>`;
       return `<tr>
         <td><strong>${p.userName || p.userEmail || '—'}</strong><br><small style="color:var(--muted)">${p.userEmail || ''}</small></td>
